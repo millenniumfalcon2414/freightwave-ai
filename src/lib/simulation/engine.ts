@@ -179,7 +179,7 @@ class SimStore {
   getState = () => this.state;
   subscribe = (l: Listener) => {
     this.listeners.add(l);
-    return () => this.listeners.delete(l);
+    return () => { this.listeners.delete(l); };
   };
   private emit() {
     this.state = { ...this.state };
