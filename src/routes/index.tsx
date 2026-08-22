@@ -336,12 +336,13 @@ function Row({ label, value }: { label: string; value: string }) {
 
 function DigitalTwin() {
   return (
-    <section className="border-b border-border/60 py-20">
-      <div className="mx-auto max-w-[1400px] px-6">
+    <section className="border-b border-border/60 py-16 sm:py-20">
+      <div className="mx-auto max-w-[1400px] px-4 sm:px-6">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <SectionLabel
             eyebrow="Space-Ground Telemetry"
-            title="Real GPS Satellite Spatial Map & Corridor Twin"
+            title="Real GPS Satellite Spatial Map & Digital Twin"
+            align="left"
           />
           <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 font-bold text-emerald-600 border border-emerald-500/20">
@@ -351,7 +352,7 @@ function DigitalTwin() {
           </div>
         </div>
 
-        <div className="mt-8">
+        <div className="mt-6 sm:mt-8">
           <RealGpsMap />
         </div>
       </div>
@@ -629,16 +630,11 @@ function SectionLabel({
   align?: "left" | "center";
 }) {
   return (
-    <div className={align === "center" ? "text-center" : ""}>
-      <div
-        className={
-          "font-mono text-[10px] uppercase tracking-widest text-primary " +
-          (align === "center" ? "" : "")
-        }
-      >
-        {eyebrow}
-      </div>
-      <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">{title}</h2>
+    <div className={align === "center" ? "text-center" : "text-left"}>
+      <div className="font-mono text-[10px] uppercase tracking-widest text-primary">{eyebrow}</div>
+      <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl text-foreground">
+        {title}
+      </h2>
     </div>
   );
 }

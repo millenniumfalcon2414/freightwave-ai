@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { createFileRoute, Link, useRouterState } from "@tanstack/react-router";
+import { useState, useMemo, useEffect } from "react";
 import {
   Activity,
   Boxes,
@@ -38,6 +38,11 @@ import {
   FileSpreadsheet,
   FileCheck2,
   Award,
+  Building2,
+  UserCheck,
+  ArrowUpRight,
+  RotateCcw,
+  LogOut,
 } from "lucide-react";
 import {
   Area,
@@ -68,6 +73,14 @@ import { useSim, simStore } from "@/lib/simulation/useSim";
 import type { Shipment, Alert } from "@/lib/simulation/engine";
 import { QaWorkflowHub } from "@/components/qa/QaWorkflowHub";
 import { MultimodalRouteOptimizer } from "@/components/dashboard/MultimodalRouteOptimizer";
+import { RoadTrackingDashboard } from "@/components/road/RoadTrackingDashboard";
+import { RailLogisticsSection } from "@/components/rail/RailLogisticsSection";
+import { LiveDemoWorkflowBanner } from "@/components/dashboard/LiveDemoWorkflowBanner";
+import { useAuth, DEMO_PERSONAS } from "@/lib/auth/authStore";
+import { useDb } from "@/lib/db/useDb";
+import { db } from "@/lib/db/database";
+import { createShipmentFn } from "@/lib/api/shipment.functions";
+import { UserRole } from "@/types/auth";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -123,12 +136,66 @@ const CITY_NODES = [
 ];
 
 function Dashboard() {
+  const routerState = useRouterState();
+  const searchParams = new URLSearchParams(routerState.location.search);
+  const queryRole = searchParams.get("role") as UserRole | null;
+
+  const { user, switchPersona, logout } = useAuth();
+  const activeRole: UserRole = queryRole || user?.role || "multimodal_planner";
+
+  const handleDashboardLogout = () => {
+    logout();
+    window.location.href = "/";
+  };
+
   const kpis = useSim((s) => s.kpis);
   const freightTrend = useSim((s) => s.freightTrend);
   const corridorPerf = useSim((s) => s.corridorPerf);
   const costTrend = useSim((s) => s.costTrend);
-  const alerts = useSim((s) => s.alerts);
-  const shipments = useSim((s) => s.shipments);
+
+  const dbShipments = useDb((s) => s.shipments);
+  const dbAlerts = useDb((s) => s.alerts);
+
+  const shipments = useMemo(
+    () =>
+      dbShipments.map(
+        (s) =>
+          ({
+            id: s.shipmentId,
+            corridor: `${s.origin} -> ${s.destination}`,
+            cargo: s.cargoType,
+            etaMin: s.remainingKm ? Math.round((s.remainingKm / 60) * 60) : 0,
+            status:
+              s.status === "ON_SCHEDULE" ||
+              s.status === "IN_TRANSIT" ||
+              s.status === "BOOKED" ||
+              s.status === "LOADED"
+                ? "on_schedule"
+                : s.status === "REROUTED"
+                  ? "rerouted"
+                  : "delay_20m",
+            confidence: s.predictedEta ? 92 : 85,
+            weightTons: s.cargoWeight,
+          }) as unknown,
+      ),
+    [dbShipments],
+  );
+
+  const alerts = useMemo(
+    () =>
+      dbAlerts.map(
+        (a) =>
+          ({
+            id: a.alertId,
+            t: new Date(a.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            sev: a.severity.toLowerCase(),
+            msg: a.description,
+            node: a.shipmentId || "System",
+          }) as unknown,
+      ),
+    [dbAlerts],
+  );
+
   const hardware = useSim((s) => s.hardware);
   const params = useSim((s) => s.params);
   const activeIncident = useActiveIncident();
@@ -138,12 +205,33 @@ function Dashboard() {
     | "emergency"
     | "optimizer"
     | "gps_map"
+    | "road_tracking"
+    | "rail_logistics"
     | "qa_workflow"
     | "shipments"
     | "recommendations"
     | "analytics"
     | "controls"
-  >("optimizer");
+  >(
+    activeRole === "safety_inspector"
+      ? "qa_workflow"
+      : activeRole === "train_operator"
+        ? "rail_logistics"
+        : activeRole === "fleet_operator" || activeRole === "driver"
+          ? "road_tracking"
+          : "optimizer",
+  );
+
+  useEffect(() => {
+    if (queryRole === "safety_inspector") {
+      setActiveTab("qa_workflow");
+    } else if (queryRole === "fleet_operator" || queryRole === "driver") {
+      setActiveTab("road_tracking");
+    } else if (queryRole === "train_operator") {
+      setActiveTab("rail_logistics");
+    }
+  }, [queryRole]);
+
   const [mapDisplayMode, setMapDisplayMode] = useState<"satellite_gps" | "schematic_vector">(
     "satellite_gps",
   );
@@ -151,6 +239,10 @@ function Dashboard() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
+  const [bookOrigin, setBookOrigin] = useState("Delhi NCR (Dadri ICD)");
+  const [bookDest, setBookDest] = useState("Mumbai (JNPT Port)");
+  const [bookCargo, setBookCargo] = useState("Automotive Components");
+  const [bookTeu, setBookTeu] = useState(2);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -181,6 +273,8 @@ function Dashboard() {
     });
   }, [shipments, searchQuery, filterStatus]);
 
+  const currentPersona = DEMO_PERSONAS.find((p) => p.role === activeRole) || DEMO_PERSONAS[0];
+
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/30">
       <SiteNav />
@@ -204,6 +298,156 @@ function Dashboard() {
 
       {/* Main Container */}
       <main className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 space-y-6">
+        {/* Role Persona Header Banner (Tailored Individual Dashboard) */}
+        <div className="rounded-2xl border border-primary/30 bg-gradient-to-r from-surface via-surface-2 to-primary/5 p-5 sm:p-6 shadow-sm space-y-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div
+                className={`grid size-12 shrink-0 place-items-center rounded-2xl text-white font-bold text-lg bg-gradient-to-br ${currentPersona.avatarBg} shadow-md`}
+              >
+                {activeRole === "cargo_owner" ? (
+                  <Building2 className="size-6" />
+                ) : activeRole === "fleet_operator" ? (
+                  <Truck className="size-6" />
+                ) : activeRole === "train_operator" ? (
+                  <Train className="size-6" />
+                ) : activeRole === "safety_inspector" ? (
+                  <ShieldCheck className="size-6" />
+                ) : (
+                  <Sparkles className="size-6" />
+                )}
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                    {user?.authProvider === "google" ? "Google Verified" : "Enterprise Identity"}
+                  </span>
+                  <span className="rounded-full bg-primary/10 border border-primary/30 px-2.5 py-0.5 text-[11px] font-bold text-primary">
+                    {currentPersona.badge}
+                  </span>
+                  <span className="text-xs text-muted-foreground font-mono">
+                    ID: {user?.id || "FW-2026-ACTIVE"}
+                  </span>
+                </div>
+                <h1 className="text-lg sm:text-2xl font-black tracking-tight text-foreground mt-0.5">
+                  {user?.name || currentPersona.name} · {currentPersona.title}
+                </h1>
+                <p className="text-xs text-muted-foreground">
+                  {user?.company || currentPersona.company} · {currentPersona.description}
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Actions specific to role */}
+            <div className="flex flex-wrap items-center gap-2">
+              {activeRole === "cargo_owner" && (
+                <Link
+                  to="/cargo-portal"
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-blue-700 transition"
+                >
+                  <Train className="size-4" />
+                  <span>Open Consignor Live Rake Tracking Portal</span>
+                  <ArrowUpRight className="size-4" />
+                </Link>
+              )}
+
+              {activeRole === "safety_inspector" && (
+                <button
+                  onClick={() => setActiveTab("qa_workflow")}
+                  className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-rose-700 transition"
+                >
+                  <ShieldCheck className="size-4" />
+                  <span>Open RDSO 6-Step Wagon Safety Console</span>
+                </button>
+              )}
+
+              {activeRole === "fleet_operator" && (
+                <button
+                  onClick={() => {
+                    setActiveTab("shipments");
+                    setFilterStatus("road");
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-amber-700 transition"
+                >
+                  <Truck className="size-4" />
+                  <span>View Highway Drayage Trucks (FASTag)</span>
+                </button>
+              )}
+
+              {activeRole === "train_operator" && (
+                <button
+                  onClick={() => {
+                    setActiveTab("shipments");
+                    setFilterStatus("rail");
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition"
+                >
+                  <Train className="size-4" />
+                  <span>View DFC Block Rake Allocations (FOIS)</span>
+                </button>
+              )}
+
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-xs font-semibold text-foreground hover:bg-surface-2 transition"
+              >
+                <UserCheck className="size-3.5 text-primary" />
+                <span>Switch User</span>
+              </Link>
+
+              <button
+                type="button"
+                onClick={handleDashboardLogout}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-500 hover:bg-rose-500/20 transition"
+              >
+                <LogOut className="size-3.5" />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Persona Switcher Strip */}
+          <div className="pt-2 border-t border-border/60 flex flex-wrap items-center gap-1.5 text-xs">
+            <span className="text-[11px] font-bold text-muted-foreground mr-1">
+              Switch Individual Dashboard:
+            </span>
+            {DEMO_PERSONAS.map((p) => {
+              const isActive = activeRole === p.role;
+              return (
+                <button
+                  key={p.role}
+                  type="button"
+                  onClick={() => {
+                    switchPersona(p.role);
+                    if (p.role === "cargo_owner") {
+                      window.location.href = "/cargo-portal";
+                    } else {
+                      window.location.href = `/dashboard?role=${p.role}`;
+                    }
+                  }}
+                  className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition flex items-center gap-1.5 ${
+                    isActive
+                      ? "bg-primary text-white shadow-xs"
+                      : "bg-surface border border-border/80 text-muted-foreground hover:text-foreground hover:bg-surface-2"
+                  }`}
+                >
+                  <span>{p.title.split("/")[0]}</span>
+                  {isActive && <span className="size-1.5 rounded-full bg-white animate-pulse" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Live Interactive Hackathon Demo Mode Banner */}
+        <LiveDemoWorkflowBanner
+          onShipmentSelect={(id) => {
+            setActiveTab("shipments");
+            const target = shipments.find((s) => s.id === id);
+            if (target) setSelectedShipment(target);
+          }}
+        />
+
         {/* Amazon/Flipkart Style Top Welcome & Quick Actions Bar */}
         <div className="rounded-2xl border border-border/80 bg-surface p-5 sm:p-6 shadow-xs">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -394,6 +638,16 @@ function Dashboard() {
                 badge: "LIVE GNSS",
               },
               {
+                id: "road_tracking" as const,
+                label: "🚛 Live Road Tracking & Telematics",
+                badge: "AIS-140",
+              },
+              {
+                id: "rail_logistics" as const,
+                label: "🚆 Dedicated Rail Rake Logistics",
+                badge: "FOIS DFC",
+              },
+              {
                 id: "shipments" as const,
                 label: "📦 Live Consignments & Tracking",
                 count: filteredShipments.length,
@@ -470,6 +724,39 @@ function Dashboard() {
         {activeTab === "gps_map" && (
           <div className="space-y-6">
             <RealGpsMap />
+          </div>
+        )}
+
+        {/* TAB: Live Road Tracking & Telematics */}
+        {activeTab === "road_tracking" && (
+          <div className="space-y-6">
+            <RoadTrackingDashboard
+              onSelectVehicleOnMap={(v) => {
+                setActiveTab("gps_map");
+                showToast(`Focused on vehicle ${v.vehicleNumber} on spatial map.`);
+              }}
+              onTriggerSos={(v) => {
+                setActiveTab("emergency");
+                showToast(`Emergency protocol initiated for ${v.vehicleNumber}.`);
+              }}
+            />
+          </div>
+        )}
+
+        {/* TAB: Dedicated Rail Rake Logistics */}
+        {activeTab === "rail_logistics" && (
+          <div className="space-y-6">
+            <RailLogisticsSection
+              onSelectRakeOnMap={(rake) => {
+                setActiveTab("gps_map");
+                showToast(`Focused on train rake ${rake.rakeId} on GIS railway corridor.`);
+              }}
+              onBookSlot={(rake) => {
+                showToast(
+                  `Rake slot booking wizard opened for ${rake.rakeId} (${rake.dfcSlotNumber}).`,
+                );
+              }}
+            />
           </div>
         )}
 
@@ -1039,12 +1326,44 @@ function Dashboard() {
             </div>
 
             <form
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
                 setIsBookModalOpen(false);
+                const isDadri = bookOrigin.includes("Dadri") || bookDest.includes("JNPT");
+                const newShipment = await createShipmentFn({
+                  data: {
+                    customer: user?.company || "Tata Motors Logistics Division",
+                    origin: bookOrigin,
+                    destination: bookDest,
+                    cargoType: bookCargo,
+                    cargoWeight: bookTeu * 21.5,
+                    containerCount: bookTeu,
+                    mode: "rail",
+                    status: "IN_TRANSIT",
+                    vehicleId: `RAKE-WDFC-${Math.floor(1000 + Math.random() * 9000)}`,
+                    activeRouteName: `${bookOrigin} ↔ ${bookDest} (DFC High-Speed Line)`,
+                    riskScore: 14,
+                    riskLevel: "LOW",
+                    delayProbability: 8,
+                    estimatedDelayMinutes: 0,
+                    routeDeviationKm: 0,
+                    speedKmh: 75,
+                    expectedSpeedKmh: 75,
+                    isSimulated: false,
+                    originLat: 28.5355,
+                    originLng: 77.391,
+                    destLat: 18.9499,
+                    destLng: 72.9515,
+                    currentLat: 28.1,
+                    currentLng: 77.2,
+                    eta: new Date(Date.now() + 22 * 3600 * 1000).toISOString(),
+                    scheduledArrival: new Date(Date.now() + 22 * 3600 * 1000).toISOString(),
+                    notes: `Booked by ${user?.name || "Operations Manager"}. Direct electric rake allocation.`,
+                  },
+                });
                 simStore.step();
                 showToast(
-                  `Consignment booked successfully! Allocated to Western DFC freight rake.`,
+                  `✅ Consignment ${newShipment.shipmentId} dispatched! Assigned to Western DFC electrified rake.`,
                 );
               }}
               className="space-y-4 text-xs"
@@ -1052,7 +1371,11 @@ function Dashboard() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-semibold text-muted-foreground">Origin Hub</label>
-                  <select className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-xs font-medium focus:border-primary focus:outline-none">
+                  <select
+                    value={bookOrigin}
+                    onChange={(e) => setBookOrigin(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-xs font-medium focus:border-primary focus:outline-none"
+                  >
                     <option>Delhi NCR (Dadri ICD)</option>
                     <option>Ludhiana Freight Terminal</option>
                     <option>Ahmedabad Logistics Park</option>
@@ -1063,7 +1386,11 @@ function Dashboard() {
                   <label className="font-semibold text-muted-foreground">
                     Destination Port / Hub
                   </label>
-                  <select className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-xs font-medium focus:border-primary focus:outline-none">
+                  <select
+                    value={bookDest}
+                    onChange={(e) => setBookDest(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-xs font-medium focus:border-primary focus:outline-none"
+                  >
                     <option>Mumbai (JNPT Port)</option>
                     <option>Mundra Port Hub</option>
                     <option>Chennai Port Terminal</option>
@@ -1077,7 +1404,11 @@ function Dashboard() {
                   <label className="font-semibold text-muted-foreground">
                     Cargo Commodity Type
                   </label>
-                  <select className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-xs font-medium focus:border-primary focus:outline-none">
+                  <select
+                    value={bookCargo}
+                    onChange={(e) => setBookCargo(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-xs font-medium focus:border-primary focus:outline-none"
+                  >
                     <option>Automotive Components</option>
                     <option>Electronics & Consumer Goods</option>
                     <option>Industrial Steel & Metal</option>
@@ -1091,7 +1422,8 @@ function Dashboard() {
                   </label>
                   <input
                     type="number"
-                    defaultValue={2}
+                    value={bookTeu}
+                    onChange={(e) => setBookTeu(Math.max(1, parseInt(e.target.value) || 1))}
                     min={1}
                     max={50}
                     className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-xs font-medium focus:border-primary focus:outline-none"

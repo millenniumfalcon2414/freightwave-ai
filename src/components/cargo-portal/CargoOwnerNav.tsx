@@ -21,8 +21,10 @@ import {
   Sparkles,
   Calendar,
   Box,
+  LogOut,
 } from "lucide-react";
 import { UserProfile } from "@/types/cargo-portal";
+import { useAuth } from "@/lib/auth/authStore";
 
 export type CargoPortalTab =
   | "dashboard"
@@ -58,6 +60,13 @@ export function CargoOwnerNav({
   onOpenProfile,
 }: CargoOwnerNavProps) {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const { logout } = useAuth();
+
+  const handleSignOut = () => {
+    logout();
+    setProfileDropdownOpen(false);
+    window.location.href = "/";
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -311,7 +320,7 @@ export function CargoOwnerNav({
                   </button>
                 </div>
 
-                <div className="border-t border-border/80 pt-2">
+                <div className="border-t border-border/80 pt-2 space-y-1.5">
                   <Link
                     to="/dashboard"
                     className="flex w-full items-center justify-center gap-2 rounded-xl bg-surface-2 px-3 py-2 text-xs font-bold text-foreground hover:bg-surface-3 transition"
@@ -319,6 +328,15 @@ export function CargoOwnerNav({
                     <Layers className="size-3.5 text-primary" />
                     <span>Open Logistics OS Console</span>
                   </Link>
+
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-500 hover:bg-rose-500/20 transition"
+                  >
+                    <LogOut className="size-3.5" />
+                    <span>Sign Out to App Overview</span>
+                  </button>
                 </div>
               </div>
             )}

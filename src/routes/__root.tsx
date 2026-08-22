@@ -45,10 +45,14 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+          {error.message === "Unable to load operational data"
+            ? "Unable to load operational data"
+            : "This page didn't load"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          {error.message === "Unable to load operational data"
+            ? "We couldn't reach the database to fetch live logistics data. Please check the connection and try again."
+            : "Something went wrong on our end. You can try refreshing or head back home."}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -58,7 +62,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Try again
+            Retry
           </button>
           <a
             href="/"
@@ -145,13 +149,22 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+import { useRealtime } from "@/lib/realtime/useRealtime";
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <RealtimeWrapper>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+      </RealtimeWrapper>
     </QueryClientProvider>
   );
+}
+
+function RealtimeWrapper({ children }: { children: ReactNode }) {
+  useRealtime();
+  return <>{children}</>;
 }

@@ -21,6 +21,8 @@ import {
   Clock,
   Sparkles,
   ChevronRight,
+  ChevronLeft,
+  ChevronDown,
   ExternalLink,
   AlertOctagon,
   PhoneCall,
@@ -39,6 +41,9 @@ import {
   Fuel,
   Info,
   Car,
+  Target,
+  Globe,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useActiveIncident } from "@/lib/emergency/useEmergency";
 import { EmergencyCallModal, EmergencyCallTarget } from "@/components/emergency/EmergencyCallModal";
@@ -589,6 +594,8 @@ export function RealGpsMap() {
   const [selectedLocation, setSelectedLocation] = useState<GpsLocation | null>(
     DEFAULT_LOCATIONS[0],
   );
+  // Display Scope: default to "single" to focus on a single location instead of cluttering with multiples
+  const [displayScope, setDisplayScope] = useState<"single" | "all">("single");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Search & Navigation States
@@ -732,7 +739,7 @@ export function RealGpsMap() {
     return () => clearInterval(interval);
   }, [isSimRunning]);
 
-  // Render Markers
+  // Render Markers (supports Single Location Focus vs Full Network)
   useEffect(() => {
     const L = leafletRef.current;
     if (!mapInstanceRef.current || !L) return;
@@ -741,14 +748,19 @@ export function RealGpsMap() {
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current.clear();
 
-    DEFAULT_LOCATIONS.forEach((loc) => {
+    const activeTarget = selectedLocation || DEFAULT_LOCATIONS[0];
+    const locationsToRender = displayScope === "single" ? [activeTarget] : DEFAULT_LOCATIONS;
+
+    locationsToRender.forEach((loc) => {
       const isVehicle = loc.type === "active_vehicle";
       const isSelected = selectedLocation?.id === loc.id;
 
-      if (loc.mode === "rail" && !showTransit && !isVehicle) return;
-      if (loc.mode === "road" && !showTraffic && !isVehicle) return;
-      if ((loc.type === "port" || loc.type === "icd") && !showPorts) return;
-      if (loc.type === "road_ev" && !showEV) return;
+      if (displayScope === "all") {
+        if (loc.mode === "rail" && !showTransit && !isVehicle) return;
+        if (loc.mode === "road" && !showTraffic && !isVehicle) return;
+        if ((loc.type === "port" || loc.type === "icd") && !showPorts) return;
+        if (loc.type === "road_ev" && !showEV) return;
+      }
 
       let currentLat = loc.lat;
       let currentLng = loc.lng;
@@ -779,9 +791,9 @@ export function RealGpsMap() {
         const colorBg = isRail ? "bg-blue-600 ring-blue-400" : "bg-emerald-600 ring-emerald-400";
         markerHtml = `
           <div class="relative flex items-center justify-center cursor-pointer group">
-            <div class="absolute -inset-2 rounded-full ${isRail ? "bg-blue-500/30" : "bg-emerald-500/30"} animate-ping"></div>
-            <div class="size-9 rounded-full ${colorBg} text-white shadow-[0_4px_12px_rgba(0,0,0,0.35)] flex items-center justify-center border-2 border-white transition-transform duration-200 group-hover:scale-110 ${
-              isSelected ? "scale-125 ring-4 shadow-xl" : ""
+            <div class="absolute -inset-3 rounded-full ${isRail ? "bg-blue-500/30" : "bg-emerald-500/30"} animate-ping"></div>
+            <div class="size-10 rounded-full ${colorBg} text-white shadow-[0_4px_14px_rgba(0,0,0,0.4)] flex items-center justify-center border-2 border-white transition-transform duration-200 group-hover:scale-110 ${
+              isSelected ? "scale-125 ring-4 shadow-2xl" : ""
             }">
               <div style="transform: rotate(${currentHeading}deg);" class="transition-transform duration-200 flex items-center justify-center">
                 <svg class="size-5" viewBox="0 0 24 24" fill="currentColor">
@@ -789,10 +801,10 @@ export function RealGpsMap() {
                 </svg>
               </div>
             </div>
-            <!-- Google Maps style clean label on hover -->
-            <div class="absolute -bottom-7 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-white text-slate-800 font-sans text-[11px] px-2 py-0.5 rounded-md shadow-md border border-slate-200 font-semibold pointer-events-none z-50 flex items-center gap-1">
+            <!-- Google Maps style clean label -->
+            <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-slate-900 text-white font-sans text-[11px] px-2 py-0.5 rounded-md shadow-md border border-slate-700 font-semibold z-50 flex items-center gap-1.5">
               <span>${loc.name.split("(")[0]}</span>
-              <span class="text-blue-600 font-mono">(${remainingKm} km)</span>
+              <span class="${isRail ? "text-cyan-300" : "text-emerald-300"} font-mono">(${remainingKm} km to ETA)</span>
             </div>
           </div>
         `;
@@ -817,14 +829,14 @@ export function RealGpsMap() {
 
         markerHtml = `
           <div class="relative flex flex-col items-center justify-center cursor-pointer group">
-            <div class="flex items-center justify-center size-8 rounded-full shadow-[0_3px_8px_rgba(0,0,0,0.3)] border-2 border-white text-white transition-transform duration-200 group-hover:scale-125 ${
-              isSelected ? "scale-125 ring-4 ring-blue-400" : ""
+            <div class="flex items-center justify-center size-9 rounded-full shadow-[0_3px_10px_rgba(0,0,0,0.35)] border-2 border-white text-white transition-transform duration-200 group-hover:scale-125 ${
+              isSelected ? "scale-125 ring-4 ring-blue-400 shadow-xl" : ""
             }" style="background-color: ${pinColor};">
               ${iconSvg}
             </div>
             <div class="w-1.5 h-1.5 -mt-0.5 rounded-full" style="background-color: ${pinColor};"></div>
             <!-- Google Maps style clean name label -->
-            <div class="mt-1 bg-white/95 text-slate-800 font-sans text-[10px] px-1.5 py-0.5 rounded shadow-sm border border-slate-200/80 font-bold whitespace-nowrap opacity-90 group-hover:opacity-100 transition">
+            <div class="mt-1 bg-white text-slate-900 font-sans text-[11px] px-2 py-0.5 rounded shadow-sm border border-slate-300 font-bold whitespace-nowrap">
               ${loc.name.split("(")[0]}
             </div>
           </div>
@@ -834,8 +846,8 @@ export function RealGpsMap() {
       const customIcon = L.divIcon({
         className: "google-maps-pin",
         html: markerHtml,
-        iconSize: [40, 48],
-        iconAnchor: [20, 24],
+        iconSize: [44, 52],
+        iconAnchor: [22, 26],
       });
 
       const marker = L.marker([currentLat, currentLng], { icon: customIcon }).addTo(map);
@@ -853,6 +865,46 @@ export function RealGpsMap() {
       });
 
       markersRef.current.set(loc.id, marker);
+
+      // In single location mode, if vehicle has route, add origin & destination terminal pins
+      if (displayScope === "single" && isVehicle && loc.routePath && loc.routePath.length > 1) {
+        const startPoint = loc.routePath[0];
+        const endPoint = loc.routePath[loc.routePath.length - 1];
+
+        // Origin Pin
+        const originHtml = `
+          <div class="flex items-center gap-1 bg-emerald-700 text-white font-sans text-[10px] px-2 py-0.5 rounded shadow-lg border border-emerald-500 font-bold">
+            <span>🟢 Origin: ${loc.cargoDetails?.origin || "Dispatch Yard"}</span>
+          </div>
+        `;
+        const originIcon = L.divIcon({
+          className: "route-origin-pin",
+          html: originHtml,
+          iconSize: [160, 24],
+          iconAnchor: [80, 12],
+        });
+        const originMarker = L.marker([startPoint[0], startPoint[1]], {
+          icon: originIcon,
+        }).addTo(map);
+        markersRef.current.set(`${loc.id}-origin`, originMarker);
+
+        // Destination Pin
+        const destHtml = `
+          <div class="flex items-center gap-1 bg-blue-700 text-white font-sans text-[10px] px-2 py-0.5 rounded shadow-lg border border-blue-500 font-bold">
+            <span>🏁 Dest: ${loc.cargoDetails?.destination || "Destination Port"}</span>
+          </div>
+        `;
+        const destIcon = L.divIcon({
+          className: "route-dest-pin",
+          html: destHtml,
+          iconSize: [160, 24],
+          iconAnchor: [80, 12],
+        });
+        const destMarker = L.marker([endPoint[0], endPoint[1]], {
+          icon: destIcon,
+        }).addTo(map);
+        markersRef.current.set(`${loc.id}-dest`, destMarker);
+      }
     });
 
     // Render Crash Emergency SOS if active
@@ -897,7 +949,8 @@ export function RealGpsMap() {
     showTransit,
     showPorts,
     showEV,
-    selectedLocation?.id,
+    selectedLocation,
+    displayScope,
     isCameraLocked,
   ]);
 
@@ -905,6 +958,28 @@ export function RealGpsMap() {
     polylinesRef.current.forEach((p) => p.remove());
     polylinesRef.current = [];
 
+    // In Single Location Mode: Draw only the route corridor for the selected vehicle
+    if (displayScope === "single") {
+      const active = selectedLocation || DEFAULT_LOCATIONS[0];
+      if (active.routePath && active.routePath.length > 1) {
+        const isRail = active.mode === "rail";
+        const color = isRail ? "#2563eb" : "#059669";
+        const singleLine = L.polyline(active.routePath, {
+          color,
+          weight: 6,
+          opacity: 0.95,
+          dashArray: showTraffic ? "12, 6" : undefined,
+        }).addTo(map);
+        singleLine.bindTooltip(`${isRail ? "🚆" : "🚚"} ${active.name} Active Transit Track`, {
+          sticky: true,
+          className: "google-maps-tooltip",
+        });
+        polylinesRef.current.push(singleLine);
+      }
+      return;
+    }
+
+    // Full Network Mode: Render all national corridors
     // Western DFC
     const wdfcLine = L.polyline(WDFC_ROUTE_PATH, {
       color: "#2563eb",
@@ -951,6 +1026,12 @@ export function RealGpsMap() {
     roadNh44Line.bindTooltip("🚚 NH-44 North-South Heavy Freight Corridor", { sticky: true });
     polylinesRef.current.push(roadNh44Line);
   };
+
+  // Re-draw corridors whenever displayScope or selected location changes
+  useEffect(() => {
+    if (!mapInstanceRef.current || !leafletRef.current) return;
+    drawCorridors(mapInstanceRef.current, leafletRef.current);
+  }, [displayScope, selectedLocation?.id, showTraffic, showTransit, isClientReady]);
 
   // Google Maps Zoom In / Out
   const handleZoomIn = () => {
@@ -1024,7 +1105,40 @@ export function RealGpsMap() {
     setIsSidebarOpen(true);
     setIsSearchFocused(false);
     setSearchQuery(loc.name);
-    mapInstanceRef.current?.flyTo([loc.lat, loc.lng], 12, { duration: 1.0 });
+    if (loc.type === "active_vehicle" && loc.routePath) {
+      const interp = interpolatePolyline(loc.routePath, simProgress);
+      mapInstanceRef.current?.flyTo([interp.lat, interp.lng], 11, { duration: 1.0 });
+    } else {
+      mapInstanceRef.current?.flyTo([loc.lat, loc.lng], 13, { duration: 1.0 });
+    }
+  };
+
+  const handleNextLocation = () => {
+    const currentIndex = DEFAULT_LOCATIONS.findIndex(
+      (l) => l.id === (selectedLocation?.id || DEFAULT_LOCATIONS[0].id),
+    );
+    const nextIndex = (currentIndex + 1) % DEFAULT_LOCATIONS.length;
+    handleSelectLocation(DEFAULT_LOCATIONS[nextIndex]);
+  };
+
+  const handlePrevLocation = () => {
+    const currentIndex = DEFAULT_LOCATIONS.findIndex(
+      (l) => l.id === (selectedLocation?.id || DEFAULT_LOCATIONS[0].id),
+    );
+    const prevIndex = (currentIndex - 1 + DEFAULT_LOCATIONS.length) % DEFAULT_LOCATIONS.length;
+    handleSelectLocation(DEFAULT_LOCATIONS[prevIndex]);
+  };
+
+  const handleRecenter = () => {
+    if (!selectedLocation) return;
+    if (selectedLocation.type === "active_vehicle" && selectedLocation.routePath) {
+      const interp = interpolatePolyline(selectedLocation.routePath, simProgress);
+      mapInstanceRef.current?.flyTo([interp.lat, interp.lng], 11, { duration: 0.8 });
+    } else {
+      mapInstanceRef.current?.flyTo([selectedLocation.lat, selectedLocation.lng], 13, {
+        duration: 0.8,
+      });
+    }
   };
 
   const handleTogglePin = (id: string) => {
@@ -1036,6 +1150,8 @@ export function RealGpsMap() {
     selectedLocation?.type === "active_vehicle" && selectedLocation.routePath
       ? interpolatePolyline(selectedLocation.routePath, simProgress)
       : null;
+
+  const activeLoc = selectedLocation || DEFAULT_LOCATIONS[0];
 
   return (
     <div
@@ -1049,83 +1165,198 @@ export function RealGpsMap() {
       {/* 1. MAP CANVAS */}
       <div ref={mapContainerRef} className="absolute inset-0 w-full h-full z-0 bg-slate-200" />
 
-      {/* 2. GOOGLE MAPS FLOATING TOP-LEFT SEARCH & CONTROLS */}
-      <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 max-w-[400px] w-[calc(100%-2rem)] sm:w-[400px] pointer-events-auto">
-        {/* Search Box Card */}
-        <div className="relative rounded-lg bg-white shadow-[0_2px_6px_rgba(0,0,0,0.3)] border border-slate-200/80 transition-all">
-          <div className="flex items-center px-3 py-2">
-            <div className="flex items-center justify-center size-8 text-slate-500 hover:text-slate-700 mr-2">
-              <Search className="size-5 text-slate-400" />
+      {/* TOP COMMAND BAR: SINGLE LOCATION FOCUS & NETWORK TOGGLE */}
+      <div className="absolute top-3 left-3 right-3 sm:left-4 sm:right-4 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+        {/* Left: Search Box Card */}
+        <div className="max-w-[360px] w-full sm:w-[360px] pointer-events-auto">
+          <div className="relative rounded-xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.25)] border border-slate-200/90 transition-all">
+            <div className="flex items-center px-3 py-2">
+              <div className="flex items-center justify-center size-7 text-slate-500 hover:text-slate-700 mr-2">
+                <Search className="size-4 text-slate-400" />
+              </div>
+
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                placeholder="Search single rake, port, truck..."
+                className="flex-1 bg-transparent text-xs text-slate-800 placeholder:text-slate-400 focus:outline-hidden font-normal"
+              />
+
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="p-1 text-slate-400 hover:text-slate-600 rounded-full"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+
+              <div className="h-4 w-px bg-slate-200 mx-1.5" />
+
+              {/* Directions Action Icon */}
+              <button
+                onClick={() => setDirectionsMode(!directionsMode)}
+                className={`flex items-center justify-center size-7 rounded-lg transition ${
+                  directionsMode
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "text-blue-600 hover:bg-blue-50"
+                }`}
+                title="Get Freight Directions"
+              >
+                <Navigation className="size-3.5" />
+              </button>
             </div>
 
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              placeholder="Search Indian freight network, rakes, ports..."
-              className="flex-1 bg-transparent text-sm text-slate-800 placeholder:text-slate-400 focus:outline-hidden font-normal"
-            />
-
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-full"
-              >
-                <X className="size-4" />
-              </button>
+            {/* Autocomplete Search Dropdown */}
+            {isSearchFocused && (
+              <div className="border-t border-slate-100 max-h-80 overflow-y-auto bg-white rounded-b-xl divide-y divide-slate-100 shadow-xl">
+                <div className="p-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  {searchQuery ? "Search Results" : "Select Single Location / Rake / Hub"}
+                </div>
+                {searchSuggestions.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleSelectLocation(item)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-blue-50/60 text-left transition"
+                  >
+                    <div className="flex size-6 items-center justify-center rounded-full bg-slate-100 text-slate-600 shrink-0">
+                      {item.mode === "rail" ? (
+                        <Train className="size-3.5 text-blue-600" />
+                      ) : item.mode === "road" ? (
+                        <Truck className="size-3.5 text-amber-600" />
+                      ) : item.type === "port" ? (
+                        <Anchor className="size-3.5 text-teal-600" />
+                      ) : (
+                        <MapPin className="size-3.5 text-slate-500" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-slate-800 truncate">
+                        {item.name}
+                      </div>
+                      <div className="text-[10px] text-slate-500 truncate">{item.address}</div>
+                    </div>
+                    <ChevronRight className="size-3.5 text-slate-300" />
+                  </button>
+                ))}
+              </div>
             )}
+          </div>
+        </div>
 
-            <div className="h-5 w-px bg-slate-200 mx-2" />
-
-            {/* Directions Action Icon */}
+        {/* Right: Single Location Focus Switcher & Quick Navigation */}
+        <div className="flex items-center gap-1.5 pointer-events-auto bg-white/95 backdrop-blur-md px-2.5 py-1.5 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.25)] border border-slate-200/90 text-xs">
+          {/* Scope Toggle */}
+          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80">
             <button
-              onClick={() => setDirectionsMode(!directionsMode)}
-              className={`flex items-center justify-center size-8 rounded-full transition ${
-                directionsMode
+              onClick={() => {
+                setDisplayScope("single");
+                handleRecenter();
+              }}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${
+                displayScope === "single"
                   ? "bg-blue-600 text-white shadow-xs"
-                  : "text-blue-600 hover:bg-blue-50"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
-              title="Get Freight Directions"
+              title="Focus map exclusively on a single location"
             >
-              <Navigation className="size-4.5" />
+              <Target className="size-3.5" />
+              <span>Single Location</span>
+            </button>
+            <button
+              onClick={() => setDisplayScope("all")}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${
+                displayScope === "all"
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+              title="Show all national freight network nodes"
+            >
+              <Globe className="size-3.5" />
+              <span>All Nodes</span>
             </button>
           </div>
 
-          {/* Autocomplete Search Dropdown */}
-          {isSearchFocused && (
-            <div className="border-t border-slate-100 max-h-80 overflow-y-auto bg-white rounded-b-lg divide-y divide-slate-100">
-              <div className="p-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                {searchQuery ? "Search Results" : "Featured Freight Corridors & Hubs"}
-              </div>
-              {searchSuggestions.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleSelectLocation(item)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 text-left transition"
-                >
-                  <div className="flex size-7 items-center justify-center rounded-full bg-slate-100 text-slate-600 shrink-0">
-                    {item.mode === "rail" ? (
-                      <Train className="size-4 text-blue-600" />
-                    ) : item.mode === "road" ? (
-                      <Truck className="size-4 text-amber-600" />
-                    ) : item.type === "port" ? (
-                      <Anchor className="size-4 text-teal-600" />
-                    ) : (
-                      <MapPin className="size-4 text-slate-500" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-semibold text-slate-800 truncate">{item.name}</div>
-                    <div className="text-[11px] text-slate-500 truncate">{item.address}</div>
-                  </div>
-                  <ChevronRight className="size-4 text-slate-300" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+          <div className="h-4 w-px bg-slate-200 mx-0.5" />
 
+          {/* Quick Cycle: Prev Button */}
+          <button
+            onClick={handlePrevLocation}
+            className="flex items-center justify-center size-7 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 transition"
+            title="Previous Location"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+
+          {/* Single Location Direct Select Dropdown */}
+          <div className="relative">
+            <select
+              value={activeLoc.id}
+              onChange={(e) => {
+                const found = DEFAULT_LOCATIONS.find((l) => l.id === e.target.value);
+                if (found) handleSelectLocation(found);
+              }}
+              className="appearance-none bg-slate-50 hover:bg-slate-100 text-slate-800 text-[11px] font-bold py-1.5 pl-2.5 pr-6 rounded-lg border border-slate-200 focus:outline-hidden cursor-pointer max-w-[190px] sm:max-w-[230px] truncate"
+            >
+              <optgroup label="🚆 Dedicated Rail Freight (DFC)">
+                {DEFAULT_LOCATIONS.filter((l) => l.mode === "rail").map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="🚛 Highway Freight Fleet">
+                {DEFAULT_LOCATIONS.filter((l) => l.mode === "road").map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="⚓ Inland Ports & Terminals">
+                {DEFAULT_LOCATIONS.filter((l) => l.type === "port" || l.type === "icd").map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="⚡ EV Hubs & Infrastructure">
+                {DEFAULT_LOCATIONS.filter(
+                  (l) => l.type !== "port" && l.type !== "icd" && l.type !== "active_vehicle",
+                ).map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 size-3 text-slate-400" />
+          </div>
+
+          {/* Quick Cycle: Next Button */}
+          <button
+            onClick={handleNextLocation}
+            className="flex items-center justify-center size-7 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 transition"
+            title="Next Location"
+          >
+            <ChevronRight className="size-4" />
+          </button>
+
+          {/* Recenter Button */}
+          <button
+            onClick={handleRecenter}
+            className="flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2 py-1 rounded-lg border border-blue-200 transition"
+            title="Center map on target location"
+          >
+            <Crosshair className="size-3.5" />
+            <span className="hidden sm:inline text-[11px]">Center</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 2. GOOGLE MAPS FLOATING TOP-LEFT SEARCH & CONTROLS (CATEGORY CHIPS & DIRECTIONS) */}
+      <div className="absolute top-16 left-3 sm:left-4 z-20 flex flex-col gap-2 max-w-[360px] w-[calc(100%-1.5rem)] sm:w-[360px] pointer-events-auto">
         {/* Google Maps Quick Filter Chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           <button
@@ -1133,9 +1364,13 @@ export function RealGpsMap() {
               const rake = DEFAULT_LOCATIONS.find((l) => l.mode === "rail");
               if (rake) handleSelectLocation(rake);
             }}
-            className="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-full shadow-[0_2px_4px_rgba(0,0,0,0.15)] text-xs font-medium border border-slate-200 shrink-0 transition"
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-[0_2px_4px_rgba(0,0,0,0.15)] text-[11px] font-medium border shrink-0 transition ${
+              activeLoc.mode === "rail"
+                ? "bg-blue-600 text-white border-blue-700"
+                : "bg-white/95 text-slate-700 hover:bg-slate-50 border-slate-200"
+            }`}
           >
-            <Train className="size-3.5 text-blue-600" />
+            <Train className="size-3" />
             <span>Rail DFC</span>
           </button>
 
@@ -1144,33 +1379,41 @@ export function RealGpsMap() {
               const truck = DEFAULT_LOCATIONS.find((l) => l.mode === "road");
               if (truck) handleSelectLocation(truck);
             }}
-            className="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-full shadow-[0_2px_4px_rgba(0,0,0,0.15)] text-xs font-medium border border-slate-200 shrink-0 transition"
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-[0_2px_4px_rgba(0,0,0,0.15)] text-[11px] font-medium border shrink-0 transition ${
+              activeLoc.mode === "road"
+                ? "bg-emerald-600 text-white border-emerald-700"
+                : "bg-white/95 text-slate-700 hover:bg-slate-50 border-slate-200"
+            }`}
           >
-            <Truck className="size-3.5 text-emerald-600" />
+            <Truck className="size-3" />
             <span>Expressways</span>
           </button>
 
           <button
             onClick={() => {
-              const port = DEFAULT_LOCATIONS.find((l) => l.type === "port");
+              const port = DEFAULT_LOCATIONS.find((l) => l.type === "port" || l.type === "icd");
               if (port) handleSelectLocation(port);
             }}
-            className="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-full shadow-[0_2px_4px_rgba(0,0,0,0.15)] text-xs font-medium border border-slate-200 shrink-0 transition"
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-[0_2px_4px_rgba(0,0,0,0.15)] text-[11px] font-medium border shrink-0 transition ${
+              activeLoc.type === "port" || activeLoc.type === "icd"
+                ? "bg-teal-600 text-white border-teal-700"
+                : "bg-white/95 text-slate-700 hover:bg-slate-50 border-slate-200"
+            }`}
           >
-            <Anchor className="size-3.5 text-teal-600" />
+            <Anchor className="size-3" />
             <span>Ports & ICDs</span>
           </button>
 
           <button
             onClick={() => setShowTraffic(!showTraffic)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-[0_2px_4px_rgba(0,0,0,0.15)] text-xs font-medium border shrink-0 transition ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-[0_2px_4px_rgba(0,0,0,0.15)] text-[11px] font-medium border shrink-0 transition ${
               showTraffic
-                ? "bg-blue-50 border-blue-300 text-blue-700"
-                : "bg-white border-slate-200 text-slate-700"
+                ? "bg-amber-50 border-amber-300 text-amber-800 font-semibold"
+                : "bg-white/95 border-slate-200 text-slate-700"
             }`}
           >
-            <Activity className="size-3.5 text-emerald-600" />
-            <span>Live Traffic</span>
+            <Activity className="size-3 text-amber-600" />
+            <span>Live Speed</span>
           </button>
         </div>
 

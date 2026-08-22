@@ -1,6 +1,9 @@
 // RailFlow AI — client-side simulation engine.
 // Vanilla observable store; React reads via useSyncExternalStore.
 
+import { triggerSimulatedEventFn } from "../api/realtime.functions";
+import { db } from "../db/database";
+
 export type Severity = "critical" | "high" | "med" | "low";
 
 export type Alert = {
@@ -129,6 +132,24 @@ function seedCost(p: Params) {
   }));
 }
 function seedShipments(): Shipment[] {
+  if (typeof window !== "undefined") {
+    const dbShipments = db.getShipments();
+    if (dbShipments && dbShipments.length > 0) {
+      return dbShipments.map((s) => ({
+        id: s.shipmentId,
+        corridor: `${s.origin} → ${s.destination}`,
+        cargo: s.cargoType,
+        etaMin: s.remainingKm ? Math.round((s.remainingKm / 65) * 60) : 1200,
+        status:
+          s.status === "DELAYED"
+            ? "delay_20m"
+            : s.status === "REROUTED"
+              ? "rerouted"
+              : "on_schedule",
+        confidence: 90,
+      }));
+    }
+  }
   return Array.from({ length: 7 }, (_, i) => ({
     id: `RAKE-${1000 + Math.floor(rand(0, 9000))}-${String.fromCharCode(65 + i)}`,
     corridor: `${["Mumbai", "Ludhiana", "Nagpur", "Kolkata", "Bengaluru", "Delhi", "Chennai"][i]} → ${["Dadri", "Mundra", "Chennai", "Vizag", "Mumbai", "JNPT", "Dadri"][i]}`,
@@ -350,17 +371,45 @@ class SimStore {
       else if (r < disrupt * 0.1) status = "rerouted";
       else if (r < 0.04) status = "on_schedule";
       const confidence = clamp(sh.confidence + rand(-2, 2) + ai - weather * 2, 50, 99);
-      if (eta === 0) {
-        return {
-          ...sh,
-          id: `RAKE-${1000 + Math.floor(rand(0, 9000))}-${String.fromCharCode(65 + Math.floor(rand(0, 26)))}`,
-          etaMin: Math.round(rand(8 * 60, 48 * 60)),
-          status: "on_schedule",
-          confidence: Math.round(rand(82, 98)),
-          cargo: CARGO[Math.floor(Math.random() * CARGO.length)],
-        };
+      const updatedSh = {
+        ...sh,
+        etaMin: eta,
+        status: status as unknown,
+        confidence: Math.round(confidence),
+      };
+      if (typeof window !== "undefined" && !sh.id.startsWith("RAKE-")) {
+        let dbStatus: "IN_TRANSIT" | "DELAYED" | "REROUTED" = "IN_TRANSIT";
+        if (status === "delay_20m") dbStatus = "DELAYED";
+        if (status === "rerouted") dbStatus = "REROUTED";
+        const remainingKm = Math.round((eta * 65) / 60);
+        if (sh.status !== status || Math.random() < 0.1) {
+          triggerSimulatedEventFn({
+            data: {
+              id: `SIM-SHP-${Date.now()}`,
+              type: "SHIPMENT_ETA_UPDATED",
+              timestamp: new Date().toISOString(),
+              payload: {
+                shipmentId: sh.id,
+                status: dbStatus,
+                remainingKm,
+                confidence: updatedSh.confidence,
+              },
+            },
+          });
+        }
       }
-      return { ...sh, etaMin: eta, status, confidence: Math.round(confidence) };
+      if (eta === 0) {
+        if (!sh.id.startsWith("RAKE-")) {
+          updatedSh.etaMin = Math.round(rand(8 * 60, 48 * 60));
+          updatedSh.status = "on_schedule";
+        } else {
+          updatedSh.id = `RAKE-${1000 + Math.floor(rand(0, 9000))}-${String.fromCharCode(65 + Math.floor(rand(0, 26)))}`;
+          updatedSh.etaMin = Math.round(rand(8 * 60, 48 * 60));
+          updatedSh.status = "on_schedule";
+          updatedSh.cargo = CARGO[Math.floor(Math.random() * CARGO.length)];
+        }
+      }
+      return updatedSh;
     });
 
     // Hardware telemetry
@@ -378,6 +427,28 @@ class SimStore {
       ),
       mqttRate: Math.round(14000 + demand * 1500 + rand(-400, 400)),
     };
+    if (typeof window !== "undefined") {
+      const allVehicles = db.getVehicles();
+      if (allVehicles.length > 0 && Math.random() < 0.4) {
+        const v = allVehicles[Math.floor(Math.random() * allVehicles.length)];
+        if (v.status === "in_transit") {
+          triggerSimulatedEventFn({
+            data: {
+              id: `SIM-VEH-${Date.now()}`,
+              type: "VEHICLE_GPS_PING",
+              timestamp: new Date().toISOString(),
+              payload: {
+                vehicleId: v.vehicleId,
+                lat: v.currentLocation.lat + (Math.random() - 0.5) * 0.01,
+                lng: v.currentLocation.lng + (Math.random() - 0.5) * 0.01,
+                address: v.currentLocation.address,
+                speed: Math.max(0, Math.min(120, v.speed || 60 + (Math.random() - 0.5) * 10)),
+              },
+            },
+          });
+        }
+      }
+    }
 
     // Alerts — probabilistic spawn
     const spawnP = 0.08 + disrupt * 0.5 + weather * 0.2;
@@ -391,6 +462,26 @@ class SimStore {
               ? "med"
               : "low";
       this.injectAlertSilent(sev);
+    }
+
+    // Publish to LiveEventBus and keep persistent DB synchronized
+    if (typeof window !== "undefined") {
+      triggerSimulatedEventFn({
+        data: {
+          id: `TICK-${Date.now()}-${s.tickCount}`,
+          type: "SIMULATION_TICK",
+          timestamp: new Date().toISOString(),
+          payload: {
+            tickCount: s.tickCount,
+            activeShipments: k.activeShipments,
+            railUtil: k.railUtil,
+            roadUtil: k.roadUtil,
+            carbonKt: k.carbonKt,
+            costSavingsCr: k.costSavingsCr,
+            totalOrders: k.totalOrders,
+          },
+        },
+      });
     }
   }
 

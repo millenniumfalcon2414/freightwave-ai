@@ -3,14 +3,16 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { Bot, Send, Sparkles, X, Copy, Check, CornerDownLeft } from "lucide-react";
 import { copilotChat } from "@/lib/copilot.functions";
+import { useDb } from "@/lib/db/useDb";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
 const SUGGESTIONS = [
-  "⚡ Optimize Dadri to JNPT Port route",
-  "📦 How to consolidate 3 LCL loads?",
-  "💰 Compare Rail vs Highway costs",
-  "🌧️ Check monsoon delay forecasts",
+  "⚠️ Which shipments are at highest risk?",
+  "🔍 Why is shipment FW-1042 delayed?",
+  "🚨 Show active critical incidents",
+  "⚡ Compare DFC Rail vs NH-48 Highway",
+  "📊 Summarize today's freight operations",
 ];
 
 export function AICopilot() {
@@ -20,15 +22,28 @@ export function AICopilot() {
     {
       role: "assistant",
       content:
-        "👋 **Hi, I'm your RailFlow Freight Copilot.**\n\nI can help you calculate multimodal freight tariffs, find DFC rail rake slots, consolidate LCL shipments, and bypass weather bottlenecks. What would you like to check today?",
+        "👋 **Welcome to FreightWave AI Command Copilot.**\n\nI have direct real-time access to the live logistics database. Ask me to diagnose delayed consignments like **FW-1042**, analyze multimodal corridor tradeoffs, evaluate incident reports, or calculate risk scores.",
     },
   ]);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const dbState = useDb();
   const chat = useServerFn(copilotChat);
 
   const mutation = useMutation({
-    mutationFn: async (next: Msg[]) => chat({ data: { messages: next } }),
+    mutationFn: async (next: Msg[]) =>
+      chat({
+        data: {
+          messages: next,
+          liveDatabaseSnapshot: {
+            shipments: dbState.shipments,
+            vehicles: dbState.vehicles,
+            alerts: dbState.alerts,
+            incidents: dbState.incidents,
+            routes: dbState.routes,
+          },
+        },
+      }),
     onSuccess: (res) => {
       setMessages((m) => [...m, { role: "assistant", content: res.text || "(no response)" }]);
     },
@@ -78,9 +93,9 @@ export function AICopilot() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-foreground">RailFlow AI Copilot</span>
+                  <span className="text-sm font-bold text-foreground">FreightWave AI Copilot</span>
                   <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.2 text-[9px] font-bold text-emerald-400">
-                    Online
+                    Live Data
                   </span>
                 </div>
                 <div className="text-[11px] text-muted-foreground">

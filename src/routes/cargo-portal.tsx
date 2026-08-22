@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useShipments, useAlerts } from "@/lib/db/useDb";
 import {
   Package,
   Search,
@@ -55,7 +56,36 @@ export const Route = createFileRoute("/cargo-portal")({
 });
 
 function CargoPortalPage() {
-  const [shipments, setShipments] = useState<CargoShipment[]>(MOCK_SHIPMENTS);
+  const dbShipments = useShipments();
+  const shipments = useMemo<CargoShipment[]>(() => {
+    return dbShipments.map((db, index) => {
+      const mock =
+        MOCK_SHIPMENTS.find(
+          (m) => m.id === db.shipmentId || m.consignmentNumber === db.trackingNumber,
+        ) || MOCK_SHIPMENTS[index % MOCK_SHIPMENTS.length];
+      return {
+        ...mock,
+        id: db.shipmentId,
+        consignmentNumber: db.trackingNumber,
+        title: db.cargoType,
+        customerName: db.customer,
+        transportMode: db.mode.toUpperCase(),
+        currentLocationName: db.currentLocationAddress,
+        status:
+          db.status === "DELIVERED"
+            ? "DELIVERED"
+            : db.status === "AT_DESTINATION"
+              ? "ARRIVED_AT_DESTINATION"
+              : db.status === "DELAYED"
+                ? "DELAYED_IN_TRANSIT"
+                : "IN_TRANSIT",
+        weightTons: db.cargoWeight,
+        origin: { ...mock.origin, name: db.origin, city: db.origin },
+        destination: { ...mock.destination, name: db.destination, city: db.destination },
+      };
+    });
+  }, [dbShipments]);
+
   const [activeShipmentId, setActiveShipmentId] = useState<string>("RAIL-IND-28491");
   const [activeTab, setActiveTab] = useState<CargoPortalTab>("dashboard");
 
@@ -69,7 +99,20 @@ function CargoPortalPage() {
   const [isRefreshingGps, setIsRefreshingGps] = useState(false);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
-  const [alerts, setAlerts] = useState<CargoAlert[]>(MOCK_ALERTS);
+
+  const dbAlerts = useAlerts();
+  const alerts = useMemo<CargoAlert[]>(() => {
+    return dbAlerts.map((a) => ({
+      id: a.alertId,
+      shipmentId: a.shipmentId || "GENERAL",
+      type: a.severity === "CRITICAL" ? "SECURITY" : "LOGISTICS",
+      title: a.title,
+      description: a.description,
+      timestamp: new Date(a.timestamp).toLocaleString(),
+      isRead: false,
+      severity: a.severity.toLowerCase(),
+    }));
+  }, [dbAlerts]);
 
   // Active shipment object
   const activeShipment = shipments.find((s) => s.id === activeShipmentId) || shipments[0];
@@ -121,7 +164,7 @@ function CargoPortalPage() {
   const handleRefreshLocation = () => {
     setIsRefreshingGps(true);
     setTimeout(() => {
-      setShipments((prev) =>
+      /* setShipments((prev) =>
         prev.map((s) => {
           if (s.id === activeShipmentId) {
             // Slight jitter in speed & random minutes update
@@ -139,7 +182,7 @@ function CargoPortalPage() {
           }
           return s;
         }),
-      );
+      ); */
       setIsRefreshingGps(false);
       setSearchFeedback({
         status: "found",

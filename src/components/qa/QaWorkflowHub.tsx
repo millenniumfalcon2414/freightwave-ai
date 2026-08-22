@@ -34,6 +34,25 @@ export function QaWorkflowHub({ onDispatchGreenCorridor }: QaWorkflowHubProps) {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [activeModalInspection, setActiveModalInspection] = useState<InspectionRecord | null>(null);
   const [isWizardOpen, setIsWizardOpen] = useState<boolean>(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+
+  // Custom new inspection form state
+  const [newShipmentId, setNewShipmentId] = useState<string>(
+    "RAIL-IND-" + Math.floor(10000 + Math.random() * 90000),
+  );
+  const [newConsignment, setNewConsignment] = useState<string>(
+    "RR-CR-2026-" + Math.floor(100000 + Math.random() * 900000),
+  );
+  const [newWagon, setNewWagon] = useState<string>("WAG-9-41029 (BLCA-49)");
+  const [newCargo, setNewCargo] = useState<string>(
+    "Pharma Temperature-Sensitive Vaccines & Biologics",
+  );
+  const [newCorridor, setNewCorridor] = useState<string>("HYD-DEL (Sanathnagar ICD → Dadri)");
+  const [newStation, setNewStation] = useState<string>("Sanathnagar Multi-Modal Cargo Terminal");
+  const [newConsignor, setNewConsignor] = useState<string>("Bharat Bio-Logistics Pharma Pvt Ltd");
+  const [newConsignee, setNewConsignee] = useState<string>(
+    "National Central Medical Depot, New Delhi",
+  );
 
   // Quick Start Sample Consignments
   const quickStartTargets = [
@@ -44,6 +63,8 @@ export function QaWorkflowHub({ onDispatchGreenCorridor }: QaWorkflowHubProps) {
       wagon: "WAG-9-41029 (BLCA-49)",
       corridor: "BLR-DEL (Bengaluru → Tughlakabad ICD)",
       station: "Bengaluru Whitefield Goods Terminal",
+      consignor: "Bharat Heavy Engineering Ltd.",
+      consignee: "Northern Power Infra Hub, New Delhi",
     },
     {
       id: "RAIL-IND-39104",
@@ -52,6 +73,8 @@ export function QaWorkflowHub({ onDispatchGreenCorridor }: QaWorkflowHubProps) {
       wagon: "BTPN-TANKER-884",
       corridor: "MUM-DEL (JNPT Port → Dadri ICD)",
       station: "JNPT Freight Yard, Nhava Sheva",
+      consignor: "Mahindra Logistics Corp",
+      consignee: "Maruti Suzuki Siding, Manesar",
     },
     {
       id: "RAIL-IND-50128",
@@ -60,6 +83,18 @@ export function QaWorkflowHub({ onDispatchGreenCorridor }: QaWorkflowHubProps) {
       wagon: "BOXNHL-RAKE-108",
       corridor: "KOL-DEL (Dankuni EDFC → Dadri)",
       station: "Dankuni EDFC Freight Siding",
+      consignor: "Steel Authority of India Ltd.",
+      consignee: "National Capital Construction Terminal",
+    },
+    {
+      id: "RAIL-IND-61902",
+      consignmentNumber: "RR-SR-2026-339182",
+      cargo: "Pharma Temperature-Sensitive Vaccines",
+      wagon: "BLCA-REEFER-09",
+      corridor: "HYD-DEL (Sanathnagar → Dadri)",
+      station: "Sanathnagar Intermodal Yard",
+      consignor: "Bharat Bio-Logistics Pharma",
+      consignee: "Central Medical Depot, New Delhi",
     },
   ];
 
@@ -71,7 +106,26 @@ export function QaWorkflowHub({ onDispatchGreenCorridor }: QaWorkflowHubProps) {
       corridor: target.corridor,
       cargoDescription: target.cargo,
       locationName: target.station,
+      consignorName: target.consignor,
+      consigneeName: target.consignee,
     });
+    setActiveModalInspection(newRecord);
+    setIsWizardOpen(true);
+  };
+
+  const handleCreateCustomInspection = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newRecord = qaStore.createNewInspection({
+      shipmentId: newShipmentId,
+      consignmentNumber: newConsignment,
+      wagonNumber: newWagon,
+      corridor: newCorridor,
+      cargoDescription: newCargo,
+      locationName: newStation,
+      consignorName: newConsignor,
+      consigneeName: newConsignee,
+    });
+    setIsCreateModalOpen(false);
     setActiveModalInspection(newRecord);
     setIsWizardOpen(true);
   };
@@ -79,6 +133,16 @@ export function QaWorkflowHub({ onDispatchGreenCorridor }: QaWorkflowHubProps) {
   const handleOpenExisting = (rec: InspectionRecord) => {
     setActiveModalInspection(rec);
     setIsWizardOpen(true);
+  };
+
+  const handleExportJson = () => {
+    const jsonContent = JSON.stringify(inspections, null, 2);
+    const blob = new Blob([jsonContent], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `RailFlow_QA_Audits_Ledger_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
   };
 
   // Filtered list
@@ -113,24 +177,89 @@ export function QaWorkflowHub({ onDispatchGreenCorridor }: QaWorkflowHubProps) {
               </span>
             </div>
             <h2 className="text-lg sm:text-xl font-black text-foreground tracking-tight">
-              Quality Assurance & Multi-Step Rail Inspection Portal
+              Quality Assurance & Guided Multi-Step Freight Inspection Portal
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              Transform informal yard checks into rigorous, certified 5-step digital audits:
-              manifest verification, electronic RFID tamper seal scanning, IoT sensor calibration,
-              pneumatic Brake Power Certification (BPC), and cryptographic digital sign-off.
+              Transform informal yard safety checks into a rigorous, certified 6-step guided digital
+              workflow: manifest verification, electronic RFID tamper seal scanning, IoT sensor
+              calibration, pneumatic Brake Power Certification (BPC), defect rectification, and
+              cryptographic digital clearance.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <button
-              onClick={() => handleLaunchNewInspection(quickStartTargets[0])}
+              onClick={() => setIsCreateModalOpen(true)}
               className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-xs sm:text-sm font-bold text-white shadow-lg transition hover:brightness-110 active:scale-98"
             >
               <Plus className="size-4 stroke-[2.5]" />
               <span>Start Guided QA Inspection</span>
             </button>
+
+            <button
+              onClick={handleExportJson}
+              className="flex items-center gap-1.5 rounded-xl border border-border bg-surface px-4 py-3 text-xs font-bold text-foreground hover:bg-surface-2 transition"
+              title="Download full QA audit ledger as JSON"
+            >
+              <Printer className="size-4 text-muted-foreground" />
+              <span>Export Ledger</span>
+            </button>
           </div>
+        </div>
+      </div>
+
+      {/* Guided 6-Step Workflow Pipeline Roadmap */}
+      <div className="rounded-2xl border border-border bg-surface p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Layers className="size-4 text-primary" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
+              Standard 6-Step Guided QA Audit Pipeline
+            </h3>
+          </div>
+          <span className="text-[11px] text-muted-foreground">
+            Standardized RDSO & ISO-1496 Workflow
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-2.5">
+          {[
+            {
+              step: "01",
+              title: "Manifest & FOIS",
+              desc: "e-Way bill & axle load",
+              icon: FileCheck2,
+            },
+            { step: "02", title: "e-Seal & Shell", desc: "RFID barcode & camera", icon: Lock },
+            { step: "03", title: "IoT Sensors", desc: "Temp & NavIC GPS lock", icon: Radio },
+            { step: "04", title: "BPC & Braking", desc: "Air pipe & hot axle box", icon: Gauge },
+            {
+              step: "05",
+              title: "Defect & Sign",
+              desc: "Rectification & signature",
+              icon: PenTool,
+            },
+            { step: "06", title: "Green Corridor", desc: "RDSO QR certificate", icon: Award },
+          ].map((item, idx) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={item.step}
+                className="relative rounded-xl border border-border/80 bg-surface-2/60 p-3 space-y-1 hover:border-primary/40 transition flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground">
+                    <span className="font-mono text-primary">STEP {item.step}</span>
+                    <Icon className="size-3.5 text-muted-foreground" />
+                  </div>
+                  <div className="text-xs font-bold text-foreground mt-1">{item.title}</div>
+                  <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                    {item.desc}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -183,7 +312,7 @@ export function QaWorkflowHub({ onDispatchGreenCorridor }: QaWorkflowHubProps) {
           <span className="text-[11px] text-muted-foreground">Select rake to audit</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           {quickStartTargets.map((target) => (
             <div
               key={target.id}
@@ -196,7 +325,7 @@ export function QaWorkflowHub({ onDispatchGreenCorridor }: QaWorkflowHubProps) {
                     {target.consignmentNumber}
                   </span>
                 </div>
-                <div className="text-xs font-bold text-foreground">{target.cargo}</div>
+                <div className="text-xs font-bold text-foreground line-clamp-1">{target.cargo}</div>
                 <div className="text-[11px] text-muted-foreground truncate">{target.station}</div>
               </div>
 
@@ -206,7 +335,7 @@ export function QaWorkflowHub({ onDispatchGreenCorridor }: QaWorkflowHubProps) {
                 className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-primary/10 py-2 text-xs font-bold text-primary hover:bg-primary hover:text-primary-foreground transition active:scale-98"
               >
                 <Plus className="size-3.5" />
-                <span>Launch 5-Step QA Wizard</span>
+                <span>Launch Guided QA Wizard</span>
               </button>
             </div>
           ))}
@@ -342,6 +471,154 @@ export function QaWorkflowHub({ onDispatchGreenCorridor }: QaWorkflowHubProps) {
           </table>
         </div>
       </div>
+
+      {/* Create Custom Guided Inspection Modal */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
+          <div className="relative w-full max-w-xl rounded-2xl border border-border bg-background shadow-2xl p-6 space-y-5 animate-in fade-in">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div className="flex items-center gap-2">
+                <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                  <ShieldCheck className="size-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-foreground">
+                    Initiate Guided QA Inspection
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Setup consignment parameters for 6-step verification
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateModalOpen(false)}
+                className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface-2"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateCustomInspection} className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-foreground block mb-1">Shipment ID</label>
+                  <input
+                    type="text"
+                    value={newShipmentId}
+                    onChange={(e) => setNewShipmentId(e.target.value)}
+                    required
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2 font-mono text-xs focus:border-primary focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-foreground block mb-1">Consignment (e-RR)</label>
+                  <input
+                    type="text"
+                    value={newConsignment}
+                    onChange={(e) => setNewConsignment(e.target.value)}
+                    required
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2 font-mono text-xs focus:border-primary focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-foreground block mb-1">
+                    Wagon / Container Rake
+                  </label>
+                  <input
+                    type="text"
+                    value={newWagon}
+                    onChange={(e) => setNewWagon(e.target.value)}
+                    required
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-xs focus:border-primary focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-foreground block mb-1">Freight Corridor</label>
+                  <input
+                    type="text"
+                    value={newCorridor}
+                    onChange={(e) => setNewCorridor(e.target.value)}
+                    required
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-xs focus:border-primary focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-foreground block mb-1">Cargo Description</label>
+                <input
+                  type="text"
+                  value={newCargo}
+                  onChange={(e) => setNewCargo(e.target.value)}
+                  required
+                  className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-xs focus:border-primary focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-foreground block mb-1">Consignor (Origin)</label>
+                  <input
+                    type="text"
+                    value={newConsignor}
+                    onChange={(e) => setNewConsignor(e.target.value)}
+                    required
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-xs focus:border-primary focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-foreground block mb-1">
+                    Consignee (Destination)
+                  </label>
+                  <input
+                    type="text"
+                    value={newConsignee}
+                    onChange={(e) => setNewConsignee(e.target.value)}
+                    required
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-xs focus:border-primary focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-foreground block mb-1">
+                  Inspection Yard / Siding Location
+                </label>
+                <input
+                  type="text"
+                  value={newStation}
+                  onChange={(e) => setNewStation(e.target.value)}
+                  required
+                  className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-xs focus:border-primary focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="rounded-xl border border-border bg-surface px-4 py-2 text-xs font-bold text-foreground hover:bg-surface-2"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-xl bg-primary px-5 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 shadow-xs"
+                >
+                  Launch Step 1 (Manifest Audit)
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Guided Inspection Wizard Modal */}
       <QaInspectionWizardModal
