@@ -19,12 +19,24 @@ import {
   Building2,
   Phone,
   Sparkles,
+  Calendar,
+  Box,
 } from "lucide-react";
 import { UserProfile } from "@/types/cargo-portal";
 
+export type CargoPortalTab =
+  | "dashboard"
+  | "goods_status"
+  | "arrival_eta"
+  | "order_status"
+  | "shipments"
+  | "documents"
+  | "condition"
+  | "alerts";
+
 interface CargoOwnerNavProps {
-  activeTab: "dashboard" | "shipments" | "documents" | "condition" | "alerts";
-  setActiveTab: (tab: "dashboard" | "shipments" | "documents" | "condition" | "alerts") => void;
+  activeTab: CargoPortalTab;
+  setActiveTab: (tab: CargoPortalTab) => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   onSearchSubmit: (e?: React.FormEvent) => void;
@@ -114,62 +126,86 @@ export function CargoOwnerNav({
           <nav className="hidden xl:flex items-center gap-1 text-xs font-semibold">
             <button
               onClick={() => setActiveTab("dashboard")}
-              className={`flex items-center gap-2 rounded-xl px-3.5 py-2 transition ${
+              className={`flex items-center gap-2 rounded-xl px-3 py-2 transition ${
                 activeTab === "dashboard"
                   ? "bg-blue-600 text-white shadow-sm font-bold"
                   : "text-muted-foreground hover:bg-surface-2 hover:text-foreground"
               }`}
             >
               <Activity className="size-3.5" />
-              <span>Dashboard</span>
+              <span>Map & Live</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("goods_status")}
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-2 transition ${
+                activeTab === "goods_status"
+                  ? "bg-blue-600 text-white shadow-sm font-bold"
+                  : "text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+              }`}
+            >
+              <Box className="size-3.5 text-emerald-500" />
+              <span>Goods Status</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("arrival_eta")}
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-2 transition ${
+                activeTab === "arrival_eta"
+                  ? "bg-blue-600 text-white shadow-sm font-bold"
+                  : "text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+              }`}
+            >
+              <Calendar className="size-3.5 text-cyan-400" />
+              <span>Arrival & ETA</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("order_status")}
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-2 transition ${
+                activeTab === "order_status"
+                  ? "bg-blue-600 text-white shadow-sm font-bold"
+                  : "text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+              }`}
+            >
+              <Package className="size-3.5 text-indigo-400" />
+              <span>Order Status</span>
             </button>
 
             <button
               onClick={() => setActiveTab("shipments")}
-              className={`flex items-center gap-2 rounded-xl px-3.5 py-2 transition ${
+              className={`flex items-center gap-2 rounded-xl px-3 py-2 transition ${
                 activeTab === "shipments"
                   ? "bg-blue-600 text-white shadow-sm font-bold"
                   : "text-muted-foreground hover:bg-surface-2 hover:text-foreground"
               }`}
             >
-              <Package className="size-3.5" />
-              <span>My Shipments ({userProfile.activeShipmentsCount})</span>
+              <Layers className="size-3.5" />
+              <span>All Shipments ({userProfile.activeShipmentsCount})</span>
             </button>
 
             <button
               onClick={() => setActiveTab("documents")}
-              className={`flex items-center gap-2 rounded-xl px-3.5 py-2 transition ${
+              className={`flex items-center gap-2 rounded-xl px-3 py-2 transition ${
                 activeTab === "documents"
                   ? "bg-blue-600 text-white shadow-sm font-bold"
                   : "text-muted-foreground hover:bg-surface-2 hover:text-foreground"
               }`}
             >
               <FileText className="size-3.5" />
-              <span>Documents</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("condition")}
-              className={`flex items-center gap-2 rounded-xl px-3.5 py-2 transition ${
-                activeTab === "condition"
-                  ? "bg-blue-600 text-white shadow-sm font-bold"
-                  : "text-muted-foreground hover:bg-surface-2 hover:text-foreground"
-              }`}
-            >
-              <ShieldCheck className="size-3.5" />
-              <span>Cargo Condition</span>
+              <span>Docs</span>
             </button>
 
             <button
               onClick={() => setActiveTab("alerts")}
-              className={`relative flex items-center gap-2 rounded-xl px-3.5 py-2 transition ${
+              className={`relative flex items-center gap-2 rounded-xl px-3 py-2 transition ${
                 activeTab === "alerts"
                   ? "bg-blue-600 text-white shadow-sm font-bold"
                   : "text-muted-foreground hover:bg-surface-2 hover:text-foreground"
               }`}
             >
               <Bell className="size-3.5" />
-              <span>Notifications</span>
+              <span>Alerts</span>
               {unreadAlertsCount > 0 && (
                 <span className="flex size-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white">
                   {unreadAlertsCount}

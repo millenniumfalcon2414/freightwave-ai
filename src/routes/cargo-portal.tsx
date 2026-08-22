@@ -19,7 +19,7 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
-import { CargoOwnerNav } from "@/components/cargo-portal/CargoOwnerNav";
+import { CargoOwnerNav, CargoPortalTab } from "@/components/cargo-portal/CargoOwnerNav";
 import { CargoPortalMap } from "@/components/cargo-portal/CargoPortalMap";
 import { ShipmentTrackerHeader } from "@/components/cargo-portal/ShipmentTrackerHeader";
 import { EtaCard } from "@/components/cargo-portal/EtaCard";
@@ -33,6 +33,9 @@ import { DocumentsSection } from "@/components/cargo-portal/DocumentsSection";
 import { DeliveryConfirmationCard } from "@/components/cargo-portal/DeliveryConfirmationCard";
 import { HelpSupportModal } from "@/components/cargo-portal/HelpSupportModal";
 import { UserProfileModal } from "@/components/cargo-portal/UserProfileModal";
+import { GoodsStatusDashboard } from "@/components/cargo-portal/GoodsStatusDashboard";
+import { ArrivalTrackingDashboard } from "@/components/cargo-portal/ArrivalTrackingDashboard";
+import { OrderStatusDashboard } from "@/components/cargo-portal/OrderStatusDashboard";
 import { MOCK_SHIPMENTS, MOCK_ALERTS, MOCK_USER_PROFILE } from "@/lib/cargo-portal/mockShipments";
 import { CargoShipment, CargoAlert } from "@/types/cargo-portal";
 
@@ -53,9 +56,7 @@ export const Route = createFileRoute("/cargo-portal")({
 function CargoPortalPage() {
   const [shipments, setShipments] = useState<CargoShipment[]>(MOCK_SHIPMENTS);
   const [activeShipmentId, setActiveShipmentId] = useState<string>("RAIL-IND-28491");
-  const [activeTab, setActiveTab] = useState<
-    "dashboard" | "shipments" | "documents" | "condition" | "alerts"
-  >("dashboard");
+  const [activeTab, setActiveTab] = useState<CargoPortalTab>("dashboard");
 
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchFeedback, setSearchFeedback] = useState<{
@@ -278,6 +279,40 @@ function CargoPortalPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Tab: Goods Status & Cold-Chain Telemetry Dashboard */}
+        {activeTab === "goods_status" && (
+          <GoodsStatusDashboard
+            shipments={shipments}
+            activeShipment={activeShipment}
+            onSelectShipment={(s) => setActiveShipmentId(s.id)}
+            onRefreshGps={handleRefreshLocation}
+            isRefreshing={isRefreshingGps}
+          />
+        )}
+
+        {/* Tab: Arrival Date & ETA Intelligence Dashboard */}
+        {activeTab === "arrival_eta" && (
+          <ArrivalTrackingDashboard
+            shipments={shipments}
+            activeShipment={activeShipment}
+            onSelectShipment={(s) => setActiveShipmentId(s.id)}
+            onRefreshGps={handleRefreshLocation}
+            isRefreshing={isRefreshingGps}
+          />
+        )}
+
+        {/* Tab: Order Status & Commercial Consignment Dashboard */}
+        {activeTab === "order_status" && (
+          <OrderStatusDashboard
+            shipments={shipments}
+            activeShipment={activeShipment}
+            onSelectShipment={(s) => setActiveShipmentId(s.id)}
+            onViewDocuments={() => setActiveTab("documents")}
+            onRefreshGps={handleRefreshLocation}
+            isRefreshing={isRefreshingGps}
+          />
         )}
 
         {/* Tab 2: My Shipments View */}
