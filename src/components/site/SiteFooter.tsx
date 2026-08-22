@@ -3,7 +3,9 @@ export function SiteFooter() {
     <footer className="border-t border-border/60 bg-background/60">
       <div className="mx-auto grid max-w-[1400px] gap-10 px-6 py-14 md:grid-cols-4">
         <div>
-          <div className="text-base font-semibold tracking-tight">RailFlow<span className="text-primary">.AI</span></div>
+          <div className="text-base font-semibold tracking-tight">
+            RailFlow<span className="text-primary">.AI</span>
+          </div>
           <p className="mt-3 max-w-xs text-sm text-muted-foreground">
             Intelligent rail–road freight optimization platform for India's logistics backbone.
           </p>
@@ -14,9 +16,17 @@ export function SiteFooter() {
           { h: "Company", l: ["About", "Customers", "Careers", "Contact"] },
         ].map((c) => (
           <div key={c.h}>
-            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{c.h}</div>
+            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              {c.h}
+            </div>
             <ul className="mt-4 space-y-2 text-sm">
-              {c.l.map((x) => <li key={x}><a className="text-foreground/80 hover:text-foreground" href="#">{x}</a></li>)}
+              {c.l.map((x) => (
+                <li key={x}>
+                  <a className="text-foreground/80 hover:text-foreground" href="#">
+                    {x}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
         ))}

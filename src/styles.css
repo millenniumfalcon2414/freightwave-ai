@@ -1,6 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import "leaflet/dist/leaflet.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -41,95 +42,188 @@
 }
 
 :root {
-  --radius: 0.5rem;
-  /* Deep navy command-center palette */
-  --background: oklch(0.16 0.03 250);
-  --foreground: oklch(0.97 0.01 240);
+  --radius: 0.625rem;
+  
+  /* Simple, elegant, high-legibility light palette (Slate & Cobalt) */
+  --background: oklch(0.985 0.005 240); /* #F8FAFC soft slate canvas */
+  --foreground: oklch(0.2 0.025 250);   /* #0F172A deep readable slate */
 
-  --surface: oklch(0.20 0.035 250);
-  --surface-2: oklch(0.235 0.04 250);
-  --grid: oklch(0.30 0.04 250 / 0.4);
+  --surface: oklch(1 0 0);              /* #FFFFFF pure clean card surface */
+  --surface-2: oklch(0.96 0.008 240);   /* #F1F5F9 soft slate well / header */
+  --grid: oklch(0.9 0.01 240 / 0.6);
 
-  --card: oklch(0.22 0.035 250 / 0.6);
-  --card-foreground: oklch(0.97 0.01 240);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.025 250);
 
-  --popover: oklch(0.20 0.035 250);
-  --popover-foreground: oklch(0.97 0.01 240);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.025 250);
 
-  --primary: oklch(0.78 0.16 215);
-  --primary-foreground: oklch(0.12 0.03 250);
+  --primary: oklch(0.52 0.2 255);       /* #2563EB refined royal freight blue */
+  --primary-foreground: oklch(1 0 0);
 
-  --secondary: oklch(0.28 0.04 250);
-  --secondary-foreground: oklch(0.97 0.01 240);
+  --secondary: oklch(0.94 0.01 240);
+  --secondary-foreground: oklch(0.25 0.025 250);
 
-  --muted: oklch(0.26 0.035 250);
-  --muted-foreground: oklch(0.70 0.03 240);
+  --muted: oklch(0.94 0.008 240);
+  --muted-foreground: oklch(0.5 0.02 245); /* #64748B clear secondary text */
 
-  --accent: oklch(0.78 0.17 165);
-  --accent-foreground: oklch(0.12 0.03 250);
+  --accent: oklch(0.55 0.15 190);       /* #0D9488 calm teal */
+  --accent-foreground: oklch(1 0 0);
 
-  --destructive: oklch(0.68 0.22 25);
-  --destructive-foreground: oklch(0.98 0.01 240);
+  --destructive: oklch(0.58 0.22 25);   /* #DC2626 clear crimson */
+  --destructive-foreground: oklch(1 0 0);
 
-  --success: oklch(0.74 0.17 155);
-  --warning: oklch(0.80 0.16 75);
+  --success: oklch(0.55 0.17 155);      /* #059669 rich forest emerald */
+  --warning: oklch(0.68 0.16 75);       /* #D97706 warm amber */
 
-  --border: oklch(0.35 0.04 250 / 0.5);
-  --input: oklch(0.30 0.04 250 / 0.6);
-  --ring: oklch(0.78 0.16 215);
+  --border: oklch(0.88 0.01 240);       /* #E2E8F0 soft subtle border */
+  --input: oklch(0.88 0.01 240);
+  --ring: oklch(0.52 0.2 255 / 0.25);
 }
 
-.dark { color-scheme: dark; }
+.dark {
+  color-scheme: dark;
+  --background: oklch(0.18 0.02 250);
+  --foreground: oklch(0.96 0.01 240);
+  --surface: oklch(0.22 0.025 250);
+  --surface-2: oklch(0.26 0.03 250);
+  --grid: oklch(0.32 0.03 250 / 0.4);
+  --card: oklch(0.22 0.025 250);
+  --card-foreground: oklch(0.96 0.01 240);
+  --popover: oklch(0.22 0.025 250);
+  --popover-foreground: oklch(0.96 0.01 240);
+  --primary: oklch(0.65 0.18 250);
+  --primary-foreground: oklch(0.14 0.02 250);
+  --secondary: oklch(0.28 0.03 250);
+  --secondary-foreground: oklch(0.96 0.01 240);
+  --muted: oklch(0.28 0.025 250);
+  --muted-foreground: oklch(0.68 0.02 240);
+  --accent: oklch(0.68 0.15 190);
+  --accent-foreground: oklch(0.14 0.02 250);
+  --destructive: oklch(0.62 0.2 25);
+  --destructive-foreground: oklch(0.98 0.01 240);
+  --success: oklch(0.65 0.16 155);
+  --warning: oklch(0.75 0.15 75);
+  --border: oklch(0.3 0.025 250);
+  --input: oklch(0.3 0.025 250);
+  --ring: oklch(0.65 0.18 250 / 0.4);
+}
 
 @layer base {
-  * { border-color: var(--color-border); }
-  html, body { background: var(--color-background); color: var(--color-foreground); }
+  * {
+    border-color: var(--color-border);
+  }
+  html,
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+  }
   body {
     font-family: var(--font-sans);
     background-image:
-      radial-gradient(1200px 600px at 80% -10%, oklch(0.30 0.10 215 / 0.25), transparent 60%),
-      radial-gradient(900px 500px at -10% 20%, oklch(0.25 0.10 200 / 0.18), transparent 60%);
+      radial-gradient(1200px 600px at 80% -10%, oklch(0.52 0.2 255 / 0.04), transparent 60%),
+      radial-gradient(900px 500px at -10% 20%, oklch(0.55 0.15 190 / 0.03), transparent 60%);
     background-attachment: fixed;
   }
-  h1, h2, h3, h4 { letter-spacing: -0.02em; }
+  h1,
+  h2,
+  h3,
+  h4 {
+    letter-spacing: -0.02em;
+  }
 }
 
 @layer utilities {
-  .font-mono { font-family: var(--font-mono); }
+  .font-mono {
+    font-family: var(--font-mono);
+  }
   .glass {
-    background: linear-gradient(180deg, oklch(0.26 0.04 250 / 0.55), oklch(0.20 0.035 250 / 0.65));
+    background: var(--color-surface);
     border: 1px solid var(--color-border);
-    backdrop-filter: blur(14px) saturate(140%);
-    box-shadow: 0 1px 0 oklch(1 0 0 / 0.04) inset, 0 30px 60px -30px oklch(0 0 0 / 0.6);
+    box-shadow:
+      0 1px 3px 0 oklch(0 0 0 / 0.04),
+      0 1px 2px -1px oklch(0 0 0 / 0.03);
   }
   .glass-strong {
-    background: linear-gradient(180deg, oklch(0.28 0.04 250 / 0.7), oklch(0.22 0.035 250 / 0.8));
+    background: var(--color-surface);
     border: 1px solid var(--color-border);
-    backdrop-filter: blur(20px) saturate(160%);
+    box-shadow:
+      0 4px 6px -1px oklch(0 0 0 / 0.05),
+      0 2px 4px -2px oklch(0 0 0 / 0.04);
   }
   .grid-bg {
     background-image:
       linear-gradient(to right, var(--color-grid) 1px, transparent 1px),
       linear-gradient(to bottom, var(--color-grid) 1px, transparent 1px);
-    background-size: 56px 56px;
-    mask-image: radial-gradient(ellipse at center, black 35%, transparent 80%);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse at center, black 40%, transparent 85%);
   }
   .text-gradient {
-    background: linear-gradient(135deg, oklch(0.95 0.02 230), oklch(0.78 0.16 215) 60%, oklch(0.78 0.17 165));
+    background: linear-gradient(
+      135deg,
+      oklch(0.2 0.025 250),
+      oklch(0.45 0.2 255) 60%,
+      oklch(0.48 0.15 190)
+    );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
-  .glow-primary { box-shadow: 0 0 0 1px oklch(0.78 0.16 215 / 0.3), 0 10px 40px -10px oklch(0.78 0.16 215 / 0.45); }
-  .ring-grid { background-image: radial-gradient(oklch(0.78 0.16 215 / 0.18) 1px, transparent 1px); background-size: 18px 18px; }
+  .glow-primary {
+    box-shadow:
+      0 1px 2px 0 oklch(0 0 0 / 0.05),
+      0 4px 12px -2px oklch(0.52 0.2 255 / 0.2);
+  }
+  .ring-grid {
+    background-image: radial-gradient(oklch(0.52 0.2 255 / 0.1) 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
 }
 
-@keyframes dash-flow { to { stroke-dashoffset: -200; } }
-@keyframes pulse-soft { 0%,100% { opacity: 0.55; transform: scale(1);} 50% { opacity: 1; transform: scale(1.25);} }
-@keyframes ticker { from { transform: translateX(0);} to { transform: translateX(-50%);} }
-@keyframes float-y { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-6px);} }
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -200;
+  }
+}
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+}
+@keyframes ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
 
-.animate-dash { stroke-dasharray: 6 10; animation: dash-flow 4s linear infinite; }
-.animate-pulse-soft { animation: pulse-soft 2.4s ease-in-out infinite; }
-.animate-ticker { animation: ticker 40s linear infinite; }
-.animate-float { animation: float-y 4s ease-in-out infinite; }
+.animate-dash {
+  stroke-dasharray: 6 10;
+  animation: dash-flow 4s linear infinite;
+}
+.animate-pulse-soft {
+  animation: pulse-soft 2.4s ease-in-out infinite;
+}
+.animate-ticker {
+  animation: ticker 40s linear infinite;
+}
+.animate-float {
+  animation: float-y 4s ease-in-out infinite;
+}

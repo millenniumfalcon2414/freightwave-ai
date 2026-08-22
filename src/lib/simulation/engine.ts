@@ -22,15 +22,15 @@ export type Shipment = {
 
 export type Params = {
   running: boolean;
-  tickMs: number;            // 250..5000
-  demandMultiplier: number;  // 0.5..2.0
-  fuelPriceIndex: number;    // 80..160 (₹)
-  railShareTarget: number;   // 30..85 (% target)
-  weatherSeverity: number;   // 0..100
-  disruptionLevel: number;   // 0..100
-  aiAggressiveness: number;  // 0..100
-  carbonFocus: number;       // 0..100
-  fleetSize: number;         // 200..3000
+  tickMs: number; // 250..5000
+  demandMultiplier: number; // 0.5..2.0
+  fuelPriceIndex: number; // 80..160 (₹)
+  railShareTarget: number; // 30..85 (% target)
+  weatherSeverity: number; // 0..100
+  disruptionLevel: number; // 0..100
+  aiAggressiveness: number; // 0..100
+  carbonFocus: number; // 0..100
+  fleetSize: number; // 200..3000
   emergencyMode: boolean;
 };
 
@@ -66,7 +66,16 @@ export type SimState = {
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const CORRIDORS = ["DEL-MUM", "DEL-KOL", "MUM-CHE", "KOL-VSK", "AHM-MND", "LDH-DEL"];
-const CARGO = ["Containers", "Auto parts", "Steel coil", "Coal", "FMCG", "Cement", "Fertilizer", "Petrochem"];
+const CARGO = [
+  "Containers",
+  "Auto parts",
+  "Steel coil",
+  "Coal",
+  "FMCG",
+  "Cement",
+  "Fertilizer",
+  "Petrochem",
+];
 const NODES = ["MND", "VAR", "REW", "RAKE", "F-227", "JNPT", "DFC-E", "CONCOR-D", "DAD"];
 
 const defaultParams: Params = {
@@ -131,9 +140,27 @@ function seedShipments(): Shipment[] {
 }
 function seedAlerts(): Alert[] {
   return [
-    { id: id(), t: nowHM(), sev: "high", msg: "Mundra Port: congestion forecast T+120m. Rerouting 18 rakes.", node: "MND" },
-    { id: id(), t: nowHM(), sev: "low", msg: "Varanasi Hub: load balancing complete. Utilization +14%.", node: "VAR" },
-    { id: id(), t: nowHM(), sev: "med", msg: "Rewari segment: corridor maintenance window opens 22:00.", node: "REW" },
+    {
+      id: id(),
+      t: nowHM(),
+      sev: "high",
+      msg: "Mundra Port: congestion forecast T+120m. Rerouting 18 rakes.",
+      node: "MND",
+    },
+    {
+      id: id(),
+      t: nowHM(),
+      sev: "low",
+      msg: "Varanasi Hub: load balancing complete. Utilization +14%.",
+      node: "VAR",
+    },
+    {
+      id: id(),
+      t: nowHM(),
+      sev: "med",
+      msg: "Rewari segment: corridor maintenance window opens 22:00.",
+      node: "REW",
+    },
   ];
 }
 
@@ -179,7 +206,9 @@ class SimStore {
   getState = () => this.state;
   subscribe = (l: Listener) => {
     this.listeners.add(l);
-    return () => { this.listeners.delete(l); };
+    return () => {
+      this.listeners.delete(l);
+    };
   };
   private emit() {
     this.state = { ...this.state };
@@ -207,8 +236,14 @@ class SimStore {
   };
   injectAlert = (sev: Severity = "high") => {
     const msgs: Record<Severity, string[]> = {
-      critical: ["Derailment risk flagged on segment, traffic halted.", "Shock event 5.1g on RAKE — emergency stop."],
-      high: ["Port congestion spike — rerouting active.", "Weather front intersecting corridor in T+90m."],
+      critical: [
+        "Derailment risk flagged on segment, traffic halted.",
+        "Shock event 5.1g on RAKE — emergency stop.",
+      ],
+      high: [
+        "Port congestion spike — rerouting active.",
+        "Weather front intersecting corridor in T+90m.",
+      ],
       med: ["Load imbalance detected on multimodal hub.", "Fuel anomaly on truck fleet segment."],
       low: ["AI rebalancing complete on regional cluster.", "Throughput optimization landed."],
     };
@@ -265,10 +300,18 @@ class SimStore {
       0,
       9999,
     ).toFixed(1);
-    k.carbonKt = +clamp(k.carbonKt + (carbon * 0.18 + k.railUtil / 1000) + rand(-0.05, 0.08), 0, 9999).toFixed(2);
+    k.carbonKt = +clamp(
+      k.carbonKt + (carbon * 0.18 + k.railUtil / 1000) + rand(-0.05, 0.08),
+      0,
+      9999,
+    ).toFixed(2);
     k.consolidated += Math.round(rand(5, 22) * demand * (0.6 + ai));
-    k.emergency = p.emergencyMode ? Math.round(60 + rand(-5, 12)) : Math.round(30 + disrupt * 30 + rand(-3, 3));
-    k.fleetEff = +clamp(k.fleetEff + (ai * 0.2 - weather * 0.25) + rand(-0.3, 0.3), 40, 99).toFixed(2);
+    k.emergency = p.emergencyMode
+      ? Math.round(60 + rand(-5, 12))
+      : Math.round(30 + disrupt * 30 + rand(-3, 3));
+    k.fleetEff = +clamp(k.fleetEff + (ai * 0.2 - weather * 0.25) + rand(-0.3, 0.3), 40, 99).toFixed(
+      2,
+    );
     s.kpis = k;
 
     // Freight trend — rotate last bucket
@@ -300,13 +343,13 @@ class SimStore {
     // Shipments — decrement ETA; flip status by disruption
     s.shipments = s.shipments.map((sh) => {
       const dec = (p.tickMs / 1000) * (10 + ai * 4); // minutes per tick
-      let eta = Math.max(0, sh.etaMin - dec);
+      const eta = Math.max(0, sh.etaMin - dec);
       let status = sh.status;
       const r = Math.random();
       if (r < disrupt * 0.06) status = "delay_20m";
       else if (r < disrupt * 0.1) status = "rerouted";
       else if (r < 0.04) status = "on_schedule";
-      let confidence = clamp(sh.confidence + rand(-2, 2) + ai - weather * 2, 50, 99);
+      const confidence = clamp(sh.confidence + rand(-2, 2) + ai - weather * 2, 50, 99);
       if (eta === 0) {
         return {
           ...sh,
@@ -323,8 +366,16 @@ class SimStore {
     // Hardware telemetry
     s.hardware = {
       gpsNodes: clamp(Math.round(p.fleetSize + rand(-5, 5)), 0, 99999),
-      fuelHealthy: +clamp(s.hardware.fuelHealthy + rand(-0.3, 0.3) - weather * 0.2, 50, 99.9).toFixed(1),
-      shockEvents24h: clamp(s.hardware.shockEvents24h + (Math.random() < disrupt * 0.3 ? 1 : 0), 0, 99),
+      fuelHealthy: +clamp(
+        s.hardware.fuelHealthy + rand(-0.3, 0.3) - weather * 0.2,
+        50,
+        99.9,
+      ).toFixed(1),
+      shockEvents24h: clamp(
+        s.hardware.shockEvents24h + (Math.random() < disrupt * 0.3 ? 1 : 0),
+        0,
+        99,
+      ),
       mqttRate: Math.round(14000 + demand * 1500 + rand(-400, 400)),
     };
 
@@ -332,16 +383,23 @@ class SimStore {
     const spawnP = 0.08 + disrupt * 0.5 + weather * 0.2;
     if (Math.random() < spawnP) {
       const sev: Severity =
-        Math.random() < disrupt * 0.15 ? "critical" :
-        Math.random() < disrupt * 0.5 ? "high" :
-        Math.random() < 0.5 ? "med" : "low";
+        Math.random() < disrupt * 0.15
+          ? "critical"
+          : Math.random() < disrupt * 0.5
+            ? "high"
+            : Math.random() < 0.5
+              ? "med"
+              : "low";
       this.injectAlertSilent(sev);
     }
   }
 
   private injectAlertSilent(sev: Severity) {
     const msgs: Record<Severity, string[]> = {
-      critical: ["Derailment risk flagged on segment.", "Shock event detected — emergency stop initiated."],
+      critical: [
+        "Derailment risk flagged on segment.",
+        "Shock event detected — emergency stop initiated.",
+      ],
       high: ["Port congestion spike — rerouting active.", "Weather front intersecting corridor."],
       med: ["Load imbalance detected on hub.", "Fuel anomaly on truck fleet."],
       low: ["AI rebalancing complete on cluster.", "Throughput optimization landed."],

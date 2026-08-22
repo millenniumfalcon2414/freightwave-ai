@@ -1,25 +1,26 @@
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { Bot, Send, Sparkles, X } from "lucide-react";
+import { Bot, Send, Sparkles, X, Copy, Check, CornerDownLeft } from "lucide-react";
 import { copilotChat } from "@/lib/copilot.functions";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
 const SUGGESTIONS = [
-  "Optimize shipment from Bengaluru to Mumbai",
-  "Show consolidation opportunities",
-  "Compare rail and road costs for Delhi → Kolkata",
-  "Predict next week's freight demand",
+  "⚡ Optimize Dadri to JNPT Port route",
+  "📦 How to consolidate 3 LCL loads?",
+  "💰 Compare Rail vs Highway costs",
+  "🌧️ Check monsoon delay forecasts",
 ];
 
 export function AICopilot() {
   const [open, setOpen] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [messages, setMessages] = useState<Msg[]>([
     {
       role: "assistant",
       content:
-        "**RailFlow Copilot online.** Ask me to optimize a shipment, compare modes, surface consolidation, or forecast demand.",
+        "👋 **Hi, I'm your RailFlow Freight Copilot.**\n\nI can help you calculate multimodal freight tariffs, find DFC rail rake slots, consolidate LCL shipments, and bypass weather bottlenecks. What would you like to check today?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -50,86 +51,130 @@ export function AICopilot() {
     mutation.mutate(next);
   };
 
+  const copyToClipboard = (text: string, idx: number) => {
+    navigator.clipboard?.writeText(text);
+    setCopiedIndex(idx);
+    setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
   return (
     <>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-6 right-6 z-50 grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-2xl glow-primary transition hover:scale-105"
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 rounded-full bg-gradient-to-r from-primary to-accent px-4 py-3 text-xs font-bold text-primary-foreground shadow-2xl transition hover:scale-105 active:scale-95"
         aria-label="Open AI Copilot"
       >
-        {open ? <X className="size-6" /> : <Sparkles className="size-6" />}
+        {open ? <X className="size-5" /> : <Sparkles className="size-5" />}
+        <span className="hidden sm:inline">{open ? "Close Assistant" : "Ask AI Copilot"}</span>
       </button>
 
       {open ? (
-        <div className="fixed bottom-24 right-6 z-50 flex h-[560px] w-[min(92vw,420px)] flex-col overflow-hidden rounded-2xl glass-strong shadow-2xl">
-          <div className="flex items-center gap-3 border-b border-border/60 px-4 py-3">
-            <div className="grid size-9 place-items-center rounded-md bg-primary/15 ring-1 ring-primary/40">
-              <Bot className="size-4 text-primary" />
+        <div className="fixed bottom-20 right-4 sm:right-6 z-50 flex h-[580px] w-[min(94vw,440px)] flex-col overflow-hidden rounded-2xl border border-border/80 bg-surface-2/95 shadow-2xl backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-4">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-border/70 px-4 py-3.5 bg-surface">
+            <div className="flex items-center gap-3">
+              <div className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary">
+                <Bot className="size-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-foreground">RailFlow AI Copilot</span>
+                  <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.2 text-[9px] font-bold text-emerald-400">
+                    Online
+                  </span>
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  Multimodal Freight Intelligence · Gemini 2.5
+                </div>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold">RailFlow Copilot</div>
-              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Gemini · Lovable AI</div>
-            </div>
-            <span className="font-mono text-[9px] uppercase tracking-widest text-accent">● online</span>
+            <button
+              onClick={() => setOpen(false)}
+              className="grid size-8 place-items-center rounded-lg hover:bg-surface-2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-4" />
+            </button>
           </div>
 
-          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+          {/* Messages */}
+          <div ref={scrollRef} className="flex-1 space-y-3.5 overflow-y-auto p-4">
             {messages.map((m, i) => (
-              <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+              <div
+                key={i}
+                className={m.role === "user" ? "flex justify-end" : "flex justify-start"}
+              >
                 <div
-                  className={
+                  className={`relative group ${
                     m.role === "user"
-                      ? "max-w-[85%] rounded-2xl rounded-tr-sm bg-primary px-3.5 py-2.5 text-sm text-primary-foreground"
-                      : "max-w-[90%] rounded-2xl rounded-tl-sm border border-border bg-surface/70 px-3.5 py-2.5 text-sm leading-relaxed"
-                  }
+                      ? "max-w-[85%] rounded-2xl rounded-tr-xs bg-primary px-4 py-2.5 text-xs sm:text-sm font-medium text-primary-foreground shadow-sm"
+                      : "max-w-[90%] rounded-2xl rounded-tl-xs border border-border/70 bg-surface px-4 py-3 text-xs sm:text-sm leading-relaxed text-foreground shadow-sm"
+                  }`}
                 >
                   <Markdown text={m.content} />
+                  {m.role === "assistant" && (
+                    <button
+                      onClick={() => copyToClipboard(m.content, i)}
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-foreground rounded transition"
+                      title="Copy response"
+                    >
+                      {copiedIndex === i ? (
+                        <Check className="size-3.5 text-emerald-400" />
+                      ) : (
+                        <Copy className="size-3.5" />
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
             {mutation.isPending ? (
               <div className="flex justify-start">
-                <div className="rounded-2xl rounded-tl-sm border border-border bg-surface/70 px-3.5 py-2.5">
-                  <div className="flex gap-1">
-                    <span className="size-1.5 animate-pulse rounded-full bg-primary" />
-                    <span className="size-1.5 animate-pulse rounded-full bg-primary [animation-delay:120ms]" />
-                    <span className="size-1.5 animate-pulse rounded-full bg-primary [animation-delay:240ms]" />
+                <div className="rounded-2xl rounded-tl-xs border border-border/70 bg-surface px-4 py-3 shadow-sm">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                    <Sparkles className="size-3.5 text-primary animate-spin" />
+                    <span>Analyzing multimodal corridors...</span>
                   </div>
                 </div>
               </div>
             ) : null}
           </div>
 
-          {messages.length <= 1 ? (
-            <div className="border-t border-border/60 px-3 py-2">
-              <div className="grid grid-cols-1 gap-1.5">
-                {SUGGESTIONS.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => send(s)}
-                    className="rounded-md border border-border bg-surface/40 px-3 py-1.5 text-left text-xs text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
+          {/* Quick Prompts Chips */}
+          <div className="border-t border-border/60 bg-surface/50 p-2.5">
+            <div className="text-[10px] font-semibold text-muted-foreground mb-1.5 px-1">
+              Suggested Questions:
             </div>
-          ) : null}
+            <div className="flex flex-wrap gap-1.5">
+              {SUGGESTIONS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => send(s)}
+                  className="rounded-lg border border-border/80 bg-surface px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:border-primary/50 hover:text-foreground hover:bg-surface-2 transition"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
 
+          {/* Input Form */}
           <form
-            onSubmit={(e) => { e.preventDefault(); send(input); }}
-            className="flex items-center gap-2 border-t border-border/60 px-3 py-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              send(input);
+            }}
+            className="flex items-center gap-2 border-t border-border/70 bg-surface p-3"
           >
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask the copilot…"
-              className="flex-1 rounded-md border border-border bg-background/70 px-3 py-2 text-sm outline-none focus:border-primary/50"
+              placeholder="Ask about tariffs, DFC slots, rail vs road..."
+              className="flex-1 rounded-xl border border-border bg-background px-3.5 py-2 text-xs sm:text-sm font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
             <button
               type="submit"
               disabled={mutation.isPending || !input.trim()}
-              className="grid size-9 place-items-center rounded-md bg-primary text-primary-foreground disabled:opacity-40"
+              className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground disabled:opacity-40 transition hover:brightness-110"
             >
               <Send className="size-4" />
             </button>
@@ -144,20 +189,29 @@ export function AICopilot() {
 function Markdown({ text }: { text: string }) {
   const blocks = text.split(/\n{2,}/);
   return (
-    <div className="space-y-2 [&_strong]:text-foreground">
+    <div className="space-y-2 [&_strong]:text-foreground [&_strong]:font-semibold">
       {blocks.map((block, i) => {
         const lines = block.split("\n");
         const isList = lines.every((l) => /^\s*[-*•]\s+/.test(l));
         if (isList) {
           return (
-            <ul key={i} className="list-disc space-y-1 pl-4 text-[13px]">
+            <ul key={i} className="list-disc space-y-1 pl-4 text-xs sm:text-[13px]">
               {lines.map((l, j) => (
-                <li key={j} dangerouslySetInnerHTML={{ __html: inline(l.replace(/^\s*[-*•]\s+/, "")) }} />
+                <li
+                  key={j}
+                  dangerouslySetInnerHTML={{ __html: inline(l.replace(/^\s*[-*•]\s+/, "")) }}
+                />
               ))}
             </ul>
           );
         }
-        return <p key={i} className="text-[13px]" dangerouslySetInnerHTML={{ __html: inline(block) }} />;
+        return (
+          <p
+            key={i}
+            className="text-xs sm:text-[13px]"
+            dangerouslySetInnerHTML={{ __html: inline(block) }}
+          />
+        );
       })}
     </div>
   );
@@ -165,6 +219,11 @@ function Markdown({ text }: { text: string }) {
 
 function inline(s: string) {
   // escape, then bold
-  const esc = s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
-  return esc.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/`([^`]+)`/g, "<code class='font-mono text-[12px] text-primary'>$1</code>");
+  const esc = s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]!);
+  return esc
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(
+      /`([^`]+)`/g,
+      "<code class='font-mono text-[11px] text-primary bg-primary/10 px-1 py-0.5 rounded'>$1</code>",
+    );
 }

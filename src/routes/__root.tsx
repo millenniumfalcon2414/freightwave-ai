@@ -78,21 +78,47 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "RailFlow AI — Intelligent Rail–Road Freight Optimization" },
-      { name: "description", content: "AI-powered freight optimization across India's rail and road networks. Reduce cost, cut emissions, and orchestrate multimodal logistics in real time." },
+      {
+        name: "description",
+        content:
+          "AI-powered freight optimization across India's rail and road networks. Reduce cost, cut emissions, and orchestrate multimodal logistics in real time.",
+      },
       { name: "author", content: "RailFlow AI" },
       { property: "og:title", content: "RailFlow AI — Intelligent Rail–Road Freight Optimization" },
-      { property: "og:description", content: "AI-powered freight optimization across India's rail and road networks. Reduce cost, cut emissions, and orchestrate multimodal logistics in real time." },
+      {
+        property: "og:description",
+        content:
+          "AI-powered freight optimization across India's rail and road networks. Reduce cost, cut emissions, and orchestrate multimodal logistics in real time.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "RailFlow AI — Intelligent Rail–Road Freight Optimization" },
-      { name: "twitter:description", content: "AI-powered freight optimization across India's rail and road networks. Reduce cost, cut emissions, and orchestrate multimodal logistics in real time." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/801e8e8a-b9d6-4e7e-ba48-860b76f09a24/id-preview-7cad0dc4--05ad1e76-e295-4175-b282-6c7812f62b11.lovable.app-1781371962741.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/801e8e8a-b9d6-4e7e-ba48-860b76f09a24/id-preview-7cad0dc4--05ad1e76-e295-4175-b282-6c7812f62b11.lovable.app-1781371962741.png" },
+      {
+        name: "twitter:title",
+        content: "RailFlow AI — Intelligent Rail–Road Freight Optimization",
+      },
+      {
+        name: "twitter:description",
+        content:
+          "AI-powered freight optimization across India's rail and road networks. Reduce cost, cut emissions, and orchestrate multimodal logistics in real time.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/801e8e8a-b9d6-4e7e-ba48-860b76f09a24/id-preview-7cad0dc4--05ad1e76-e295-4175-b282-6c7812f62b11.lovable.app-1781371962741.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/801e8e8a-b9d6-4e7e-ba48-860b76f09a24/id-preview-7cad0dc4--05ad1e76-e295-4175-b282-6c7812f62b11.lovable.app-1781371962741.png",
+      },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap",
+      },
       { rel: "stylesheet", href: appCss },
     ],
   }),
