@@ -95,19 +95,55 @@ export function ShipmentTrackerHeader({
           </div>
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <strong className="text-foreground">Train / Freight:</strong>{" "}
-              {shipment.train.trainName} ({shipment.train.trainNumber})
-            </span>
-            <span className="text-border">|</span>
-            <span className="flex items-center gap-1">
-              <strong className="text-foreground">Consignment RR:</strong>{" "}
-              {shipment.consignmentNumber}
-            </span>
-            <span className="text-border">|</span>
-            <span className="flex items-center gap-1">
-              <strong className="text-foreground">Wagon:</strong> {shipment.train.wagonNumber}
-            </span>
+            {shipment.transportMode === "ROAD" || (shipment.road && !shipment.train) ? (
+              <>
+                <span className="flex items-center gap-1">
+                  <strong className="text-foreground">Fleet Vehicle:</strong>{" "}
+                  {shipment.road?.vehicleNumber || "Highway Fleet Vehicle"}
+                </span>
+                <span className="text-border">|</span>
+                <span className="flex items-center gap-1">
+                  <strong className="text-foreground">Transporter:</strong>{" "}
+                  {shipment.road?.transporterName || "Express Road Freight"}
+                </span>
+                <span className="text-border">|</span>
+                <span className="flex items-center gap-1">
+                  <strong className="text-foreground">LR / Docket No:</strong>{" "}
+                  {shipment.consignmentNumber}
+                </span>
+                {shipment.road?.eWayBillNumber && (
+                  <>
+                    <span className="text-border">|</span>
+                    <span className="flex items-center gap-1">
+                      <strong className="text-foreground">e-Way Bill:</strong>{" "}
+                      {shipment.road.eWayBillNumber}
+                    </span>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <span className="flex items-center gap-1">
+                  <strong className="text-foreground">Train / Freight:</strong>{" "}
+                  {shipment.train?.trainName || "Indian Railways Freight Rake"}{" "}
+                  {shipment.train?.trainNumber ? `(${shipment.train.trainNumber})` : ""}
+                </span>
+                <span className="text-border">|</span>
+                <span className="flex items-center gap-1">
+                  <strong className="text-foreground">Consignment RR:</strong>{" "}
+                  {shipment.consignmentNumber}
+                </span>
+                {shipment.train?.wagonNumber && (
+                  <>
+                    <span className="text-border">|</span>
+                    <span className="flex items-center gap-1">
+                      <strong className="text-foreground">Wagon:</strong>{" "}
+                      {shipment.train.wagonNumber}
+                    </span>
+                  </>
+                )}
+              </>
+            )}
           </div>
         </div>
 

@@ -202,7 +202,11 @@ export function DocumentsSection({ shipment }: DocumentsSectionProps) {
                 <tbody>
                   <tr>
                     <td className="p-2 border-b font-medium">{shipment.cargoDescription}</td>
-                    <td className="p-2 border-b font-mono">{shipment.train.wagonNumber}</td>
+                    <td className="p-2 border-b font-mono">
+                      {shipment.train?.wagonNumber ||
+                        shipment.road?.vehicleNumber ||
+                        "Standard Unit"}
+                    </td>
                     <td className="p-2 border-b font-mono">{shipment.packagesCount}</td>
                     <td className="p-2 border-b font-mono font-bold">{shipment.weightTons} Tons</td>
                   </tr>

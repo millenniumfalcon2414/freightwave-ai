@@ -141,8 +141,21 @@ export function GoodsStatusDashboard({
                 <span className="font-mono text-xs text-muted-foreground">
                   Consignment:{" "}
                   <strong className="text-foreground">{activeShipment.consignmentNumber}</strong> ·
-                  Container/Wagon:{" "}
-                  <strong className="text-blue-600">{activeShipment.train.wagonNumber}</strong>
+                  {activeShipment.transportMode === "ROAD" && activeShipment.road ? (
+                    <>
+                      Truck/Trailer:{" "}
+                      <strong className="text-emerald-600 font-bold">
+                        {activeShipment.road.vehicleNumber} ({activeShipment.road.trailerType})
+                      </strong>
+                    </>
+                  ) : (
+                    <>
+                      Container/Wagon:{" "}
+                      <strong className="text-blue-600 font-bold">
+                        {activeShipment.train?.wagonNumber || "N/A"}
+                      </strong>
+                    </>
+                  )}
                 </span>
               </div>
             </div>

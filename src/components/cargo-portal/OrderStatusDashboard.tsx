@@ -54,6 +54,9 @@ export function OrderStatusDashboard({
     if (statusFilter === "OUT_FOR_DELIVERY" && s.status !== "OUT_FOR_DELIVERY") return false;
     if (statusFilter === "DELIVERED" && s.status !== "DELIVERED") return false;
     if (statusFilter === "DELAYED" && !s.isDelayed && s.status !== "DELAYED") return false;
+    if (statusFilter === "ROAD" && s.transportMode !== "ROAD") return false;
+    if (statusFilter === "RAIL" && s.transportMode !== "RAIL" && s.transportMode !== "MULTIMODAL")
+      return false;
 
     if (orderSearch.trim()) {
       const q = orderSearch.toLowerCase();
@@ -63,7 +66,9 @@ export function OrderStatusDashboard({
         s.cargoType.toLowerCase().includes(q) ||
         s.origin.city.toLowerCase().includes(q) ||
         s.destination.city.toLowerCase().includes(q) ||
-        s.train.trainNumber.toLowerCase().includes(q)
+        (s.train && s.train.trainNumber.toLowerCase().includes(q)) ||
+        (s.road && s.road.vehicleNumber.toLowerCase().includes(q)) ||
+        (s.road && s.road.transporterName.toLowerCase().includes(q))
       );
     }
     return true;

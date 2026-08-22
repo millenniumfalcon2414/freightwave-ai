@@ -162,6 +162,10 @@ export function CargoPortalMap({
     }).addTo(map);
 
     return () => {
+      if (movingMarkerRef.current) {
+        movingMarkerRef.current.remove();
+        movingMarkerRef.current = null;
+      }
       map.remove();
       mapRef.current = null;
     };
@@ -176,19 +180,19 @@ export function CargoPortalMap({
     return () => clearInterval(interval);
   }, [isLiveMoving]);
 
-  // Draw Route Polylines and Dynamic Moving Marker
+  // 1. Draw Route Polylines and Waypoint Station Pins (Only when shipment/filters change)
   useEffect(() => {
     const L = leafletRef.current;
     const map = mapRef.current;
     if (!L || !map) return;
 
-    // Clear previous elements
+    // Clear previous static elements
     polylinesRef.current.forEach((p) => p.remove());
     polylinesRef.current = [];
     stationMarkersRef.current.forEach((m) => m.remove());
     stationMarkersRef.current = [];
 
-    // 1. Draw Railway Primary Route (Blue Glow Track)
+    // 1. Draw Railway Primary Route (Blue Glow Track) if available
     if (shipment.railRouteCoords && shipment.railRouteCoords.length > 1) {
       const glowLine = L.polyline(shipment.railRouteCoords, {
         color: "#3b82f6",
@@ -203,21 +207,33 @@ export function CargoPortalMap({
         opacity: 0.9,
         dashArray: "8, 4",
       }).addTo(map);
-      railLine.bindTooltip(`🚆 ${shipment.train.trainName} (${shipment.train.trainNumber})`, {
-        sticky: true,
-      });
+      const trainLabel = shipment.train
+        ? `🚆 ${shipment.train.trainName} (${shipment.train.trainNumber})`
+        : "🚆 Dedicated Freight Railway Corridor";
+      railLine.bindTooltip(trainLabel, { sticky: true });
       polylinesRef.current.push(railLine);
     }
 
-    // 2. Draw Road Drayage Last-Mile Route (Cyan/Amber Dashed)
-    if (shipment.roadDrayageCoords && shipment.roadDrayageCoords.length > 1) {
-      const roadLine = L.polyline(shipment.roadDrayageCoords, {
-        color: "#0891b2",
-        weight: 4,
-        dashArray: "4, 6",
-        opacity: 0.85,
+    // 2. Draw Road Primary or Drayage Route (Emerald/Cyan Corridor)
+    const roadCoords = shipment.roadRouteCoords || shipment.roadDrayageCoords;
+    if (roadCoords && roadCoords.length > 1) {
+      const roadGlow = L.polyline(roadCoords, {
+        color: "#10b981",
+        weight: 7,
+        opacity: 0.2,
       }).addTo(map);
-      roadLine.bindTooltip(`drayage 🚛 Last-Mile Road Expressway Drayage Route`, { sticky: true });
+      polylinesRef.current.push(roadGlow);
+
+      const roadLine = L.polyline(roadCoords, {
+        color: "#059669",
+        weight: 4,
+        dashArray: "6, 4",
+        opacity: 0.9,
+      }).addTo(map);
+      const roadLabel = shipment.road
+        ? `🚛 Roadway Freight: ${shipment.road.transporterName} (${shipment.road.vehicleNumber}) - ${shipment.road.currentHighwayCorridor}`
+        : `🚛 National Highway Logistics Corridor`;
+      roadLine.bindTooltip(roadLabel, { sticky: true });
       polylinesRef.current.push(roadLine);
     }
 
@@ -292,9 +308,19 @@ export function CargoPortalMap({
       const sm = L.marker([wp.lat, wp.lng], { icon: stationIcon }).addTo(map);
       stationMarkersRef.current.push(sm);
     });
+  }, [isClientReady, shipment, showRoadHubs, showRailSiding]);
 
-    // 6. CONTINUOUS SMOOTH MOVING FREIGHT MARKER (Ola / Swiggy Style)
-    const routeCoords = shipment.railRouteCoords || [];
+  // 2. Dynamic Live Moving Freight Marker (Clean single instance, no ghosting)
+  useEffect(() => {
+    const L = leafletRef.current;
+    const map = mapRef.current;
+    if (!L || !map) return;
+
+    const routeCoords =
+      (shipment.transportMode === "ROAD" ? shipment.roadRouteCoords : shipment.railRouteCoords) ||
+      shipment.railRouteCoords ||
+      shipment.roadDrayageCoords ||
+      [];
     const currentLocInterpolated = interpolatePolyline(routeCoords, simProgress);
 
     const currentLat = currentLocInterpolated.lat;
@@ -306,22 +332,28 @@ export function CargoPortalMap({
       map.panTo([currentLat, currentLng], { animate: true, duration: 0.2 });
     }
 
-    const isTruck = shipment.status === "OUT_FOR_DELIVERY";
+    const isTruck = shipment.transportMode === "ROAD" || shipment.status === "OUT_FOR_DELIVERY";
     const movingIcon = L.divIcon({
       className: "custom-moving-train-pin",
       html: `
         <div class="relative flex items-center justify-center cursor-pointer">
-          <div class="absolute -inset-3 rounded-full bg-blue-500/40 animate-ping"></div>
-          <div class="size-11 rounded-2xl bg-gradient-to-tr from-blue-700 via-indigo-600 to-cyan-500 text-white border-2 border-white shadow-2xl flex items-center justify-center ring-4 ring-cyan-400/50" style="transform: rotate(${currentHeading}deg);">
+          <div class="absolute -inset-3 rounded-full ${isTruck ? "bg-emerald-500/40" : "bg-blue-500/40"} animate-ping"></div>
+          <div class="size-11 rounded-2xl ${
+            isTruck
+              ? "bg-gradient-to-tr from-emerald-700 via-teal-600 to-cyan-500 ring-emerald-400/50"
+              : "bg-gradient-to-tr from-blue-700 via-indigo-600 to-cyan-500 ring-cyan-400/50"
+          } text-white border-2 border-white shadow-2xl flex items-center justify-center ring-4" style="transform: rotate(${currentHeading}deg);">
             ${
               isTruck
                 ? `<svg class="size-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h2m-6 0a1 1 0 001-1v-3"/></svg>`
                 : `<svg class="size-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 15V9a2 2 0 012-2h12a2 2 0 012 2v6m-16 0v2a2 2 0 002 2h1m13-4v2a2 2 0 01-2 2h-1m-10 0h8m-8-9h8m-8 4h8M7 19l-3 3m13-3l3 3"/></svg>`
             }
           </div>
-          <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-blue-900 text-white font-mono text-[9px] px-2 py-0.5 shadow-lg border border-blue-400 font-bold flex items-center gap-1">
+          <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md ${
+            isTruck ? "bg-emerald-950 border-emerald-400" : "bg-blue-900 border-blue-400"
+          } text-white font-mono text-[9px] px-2 py-0.5 shadow-lg border font-bold flex items-center gap-1">
             <span class="size-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>LIVE: ${remainingKm} km to Destination (${shipment.currentSpeedKmh} km/h)</span>
+            <span>LIVE: ${remainingKm} km (${shipment.currentSpeedKmh} km/h)</span>
           </div>
         </div>
       `,
@@ -329,13 +361,21 @@ export function CargoPortalMap({
       iconAnchor: [22, 22],
     });
 
-    const liveMarker = L.marker([currentLat, currentLng], {
-      icon: movingIcon,
-      zIndexOffset: 1000,
-    }).addTo(map);
+    if (movingMarkerRef.current) {
+      movingMarkerRef.current.setLatLng([currentLat, currentLng]);
+      movingMarkerRef.current.setIcon(movingIcon);
+    } else {
+      const liveMarker = L.marker([currentLat, currentLng], {
+        icon: movingIcon,
+        zIndexOffset: 1000,
+      }).addTo(map);
+      movingMarkerRef.current = liveMarker;
+    }
 
-    movingMarkerRef.current = liveMarker;
-  }, [isClientReady, shipment, showRoadHubs, showRailSiding, simProgress, isCameraLocked]);
+    return () => {
+      // In case unmounted
+    };
+  }, [isClientReady, shipment, simProgress, isCameraLocked]);
 
   // Center on Live Current Position
   const handleViewLiveLocation = () => {
@@ -348,13 +388,21 @@ export function CargoPortalMap({
   // Reset to full route bounds
   const handleFitRoute = () => {
     const L = leafletRef.current;
-    if (!L || !mapRef.current || !shipment.railRouteCoords) return;
-    mapRef.current.fitBounds(L.polyline(shipment.railRouteCoords).getBounds(), {
+    const activeRoute =
+      (shipment.transportMode === "ROAD" ? shipment.roadRouteCoords : shipment.railRouteCoords) ||
+      shipment.railRouteCoords ||
+      shipment.roadDrayageCoords;
+    if (!L || !mapRef.current || !activeRoute) return;
+    mapRef.current.fitBounds(L.polyline(activeRoute).getBounds(), {
       padding: [50, 50],
     });
   };
 
-  const routeCoords = shipment.railRouteCoords || [];
+  const routeCoords =
+    (shipment.transportMode === "ROAD" ? shipment.roadRouteCoords : shipment.railRouteCoords) ||
+    shipment.railRouteCoords ||
+    shipment.roadDrayageCoords ||
+    [];
   const currentLocInterpolated = interpolatePolyline(routeCoords, simProgress);
 
   return (
@@ -505,21 +553,25 @@ export function CargoPortalMap({
             </div>
           </div>
 
-          {/* Driver Contact */}
+          {/* Driver / Loco Pilot Contact */}
           <div className="flex items-center justify-between rounded-xl bg-blue-50/80 dark:bg-blue-950/40 p-2 border border-blue-200 dark:border-blue-900 text-xs">
             <div className="text-[10px] font-bold text-foreground truncate">
-              Pilot: {shipment.train.trainName}
+              {shipment.transportMode === "ROAD" && shipment.road
+                ? `Driver: ${shipment.road.driverName} (${shipment.road.vehicleNumber})`
+                : `Loco Pilot: ${shipment.train?.trainName || "Indian Railways"}`}
             </div>
             <button
               onClick={() =>
                 alert(
-                  `Contacting Crew Control for ${shipment.train.trainName} (${shipment.train.trainNumber})`,
+                  shipment.transportMode === "ROAD" && shipment.road
+                    ? `Contacting Commercial Fleet Dispatch for Driver ${shipment.road.driverName} (${shipment.road.vehicleNumber})`
+                    : `Contacting Rail Crew Control for ${shipment.train?.trainName || "Freight Rake"}`,
                 )
               }
               className="flex items-center gap-1 rounded-lg bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-blue-700 transition"
             >
               <PhoneCall className="size-2.5" />
-              <span>Call Crew</span>
+              <span>{shipment.transportMode === "ROAD" ? "Call Driver" : "Call Crew"}</span>
             </button>
           </div>
         </div>

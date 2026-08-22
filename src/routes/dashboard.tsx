@@ -59,7 +59,6 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { KpiCard } from "@/components/site/KpiCard";
 import { AICopilot } from "@/components/site/AICopilot";
 import { SimControlPanel } from "@/components/site/SimControlPanel";
-import { IndiaNetwork } from "@/components/site/IndiaNetwork";
 import { RealGpsMap } from "@/components/site/RealGpsMap";
 import { EmergencyIncidentConsole } from "@/components/emergency/EmergencyIncidentConsole";
 import { EmergencyFloatingBanner } from "@/components/emergency/EmergencyFloatingBanner";
@@ -68,11 +67,12 @@ import { emergencyStore } from "@/lib/emergency/emergencyStore";
 import { useSim, simStore } from "@/lib/simulation/useSim";
 import type { Shipment, Alert } from "@/lib/simulation/engine";
 import { QaWorkflowHub } from "@/components/qa/QaWorkflowHub";
+import { MultimodalRouteOptimizer } from "@/components/dashboard/MultimodalRouteOptimizer";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
-      { title: "Consignments & Logistics Hub · RailFlow AI" },
+      { title: "Consignments & Logistics Hub · FreightWave AI" },
       {
         name: "description",
         content:
@@ -136,15 +136,14 @@ function Dashboard() {
   // User interaction states
   const [activeTab, setActiveTab] = useState<
     | "emergency"
+    | "optimizer"
     | "gps_map"
     | "qa_workflow"
     | "shipments"
-    | "map"
     | "recommendations"
     | "analytics"
-    | "telemetry"
     | "controls"
-  >("gps_map");
+  >("optimizer");
   const [mapDisplayMode, setMapDisplayMode] = useState<"satellite_gps" | "schematic_vector">(
     "satellite_gps",
   );
@@ -153,11 +152,6 @@ function Dashboard() {
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  // Route calculator state for the Map/Planner tab
-  const [calcOrigin, setCalcOrigin] = useState("DEL");
-  const [calcDest, setCalcDest] = useState("MUM");
-  const [calcWeight, setCalcWeight] = useState(24);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -186,38 +180,6 @@ function Dashboard() {
       return true;
     });
   }, [shipments, searchQuery, filterStatus]);
-
-  // Route calculation results
-  const routeCalculation = useMemo(() => {
-    const isDfcCorridor =
-      (calcOrigin === "DEL" && calcDest === "MUM") ||
-      (calcOrigin === "MUM" && calcDest === "DEL") ||
-      (calcOrigin === "DEL" && calcDest === "KOL") ||
-      (calcOrigin === "KOL" && calcDest === "DEL") ||
-      (calcOrigin === "AHM" && calcDest === "MND");
-
-    const baseDistanceKm = 1400;
-    const railCostPerTeu = Math.round(calcWeight * 1450 + (isDfcCorridor ? 22000 : 28000));
-    const roadCostPerTeu = Math.round(calcWeight * 2600 + 39000);
-    const railTimeHrs = isDfcCorridor ? 22 : 36;
-    const roadTimeHrs = 42;
-    const co2RailKg = Math.round(baseDistanceKm * calcWeight * 0.022);
-    const co2RoadKg = Math.round(baseDistanceKm * calcWeight * 0.062);
-    const costSaved = roadCostPerTeu - railCostPerTeu;
-    const co2SavedPct = Math.round(((co2RoadKg - co2RailKg) / co2RoadKg) * 100);
-
-    return {
-      isDfcCorridor,
-      railCostPerTeu,
-      roadCostPerTeu,
-      railTimeHrs,
-      roadTimeHrs,
-      co2RailKg,
-      co2RoadKg,
-      costSaved,
-      co2SavedPct,
-    };
-  }, [calcOrigin, calcDest, calcWeight]);
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/30">
@@ -304,7 +266,7 @@ function Dashboard() {
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement("a");
                   a.href = url;
-                  a.download = `RailFlow_Manifest_${new Date().toISOString().slice(0, 10)}.csv`;
+                  a.download = `FreightWave_Manifest_${new Date().toISOString().slice(0, 10)}.csv`;
                   a.click();
                   showToast("Manifest downloaded successfully as CSV.");
                 }}
@@ -422,6 +384,32 @@ function Dashboard() {
           <div className="flex space-x-2 overflow-x-auto pb-1">
             {[
               {
+                id: "optimizer" as const,
+                label: "⚡ Route Optimizer & Modal Split",
+                badge: "AI ALLOCATOR",
+              },
+              {
+                id: "gps_map" as const,
+                label: "🛰️ Real GPS & Satellite Map",
+                badge: "LIVE GNSS",
+              },
+              {
+                id: "shipments" as const,
+                label: "📦 Live Consignments & Tracking",
+                count: filteredShipments.length,
+              },
+              {
+                id: "qa_workflow" as const,
+                label: "🛡️ Quality Assurance & RDSO Audit",
+                badge: "RDSO G-95",
+              },
+              {
+                id: "recommendations" as const,
+                label: "💡 Smart AI Opportunities & Savings",
+                count: 3,
+              },
+              { id: "analytics" as const, label: "📊 Cost & Volume Analytics" },
+              {
                 id: "emergency" as const,
                 label: "🚨 Emergency & Accident Response",
                 badge:
@@ -430,29 +418,6 @@ function Dashboard() {
                     : undefined,
                 isAlert: activeIncident && activeIncident.status !== "RESOLVED",
               },
-              {
-                id: "gps_map" as const,
-                label: "🛰️ Real GPS & Satellite Map",
-                badge: "LIVE GNSS",
-              },
-              {
-                id: "qa_workflow" as const,
-                label: "🛡️ Quality Assurance & RDSO Audit",
-                badge: "RDSO G-95",
-              },
-              {
-                id: "shipments" as const,
-                label: "📦 Live Consignments & Tracking",
-                count: filteredShipments.length,
-              },
-              { id: "map" as const, label: "🗺️ India Freight Corridors & Route Estimator" },
-              {
-                id: "recommendations" as const,
-                label: "💡 Smart AI Opportunities & Savings",
-                count: 3,
-              },
-              { id: "analytics" as const, label: "📊 Cost & Volume Analytics" },
-              { id: "telemetry" as const, label: "📡 IoT Edge Sensors & Telemetry" },
               { id: "controls" as const, label: "🎛️ Simulation Controls" },
             ].map((tab) => (
               <button
@@ -744,215 +709,9 @@ function Dashboard() {
           </div>
         )}
 
-        {/* TAB 2: India Freight Corridors & Route Estimator */}
-        {activeTab === "map" && (
-          <div className="space-y-6">
-            <div className="grid gap-6 lg:grid-cols-12">
-              {/* Interactive Route Estimator (Left 5 cols) */}
-              <div className="lg:col-span-5 space-y-4">
-                <div className="rounded-2xl border border-border/70 bg-surface/80 p-5 shadow-sm space-y-4">
-                  <div>
-                    <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
-                      Instant Route Cost & Carbon Estimator
-                    </span>
-                    <h2 className="mt-1.5 text-lg font-bold">Compare Rail vs Road</h2>
-                    <p className="text-xs text-muted-foreground">
-                      Select origin and destination hubs in India to calculate freight cost,
-                      turnaround hours, and CO₂ savings.
-                    </p>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground">
-                        Origin Hub (ICD / Port / Warehouse)
-                      </label>
-                      <select
-                        value={calcOrigin}
-                        onChange={(e) => setCalcOrigin(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-xs sm:text-sm font-medium focus:border-primary focus:outline-none"
-                      >
-                        {CITY_NODES.map((city) => (
-                          <option key={city.id} value={city.id} disabled={city.id === calcDest}>
-                            {city.name} ({city.state})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground">
-                        Destination Hub
-                      </label>
-                      <select
-                        value={calcDest}
-                        onChange={(e) => setCalcDest(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-xs sm:text-sm font-medium focus:border-primary focus:outline-none"
-                      >
-                        {CITY_NODES.map((city) => (
-                          <option key={city.id} value={city.id} disabled={city.id === calcOrigin}>
-                            {city.name} ({city.state})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between text-xs font-semibold">
-                        <span className="text-muted-foreground">Cargo Payload Weight</span>
-                        <span className="font-mono text-primary">
-                          {calcWeight} Metric Tonnes (1 TEU)
-                        </span>
-                      </div>
-                      <input
-                        type="range"
-                        min="5"
-                        max="60"
-                        value={calcWeight}
-                        onChange={(e) => setCalcWeight(Number(e.target.value))}
-                        className="mt-2 w-full accent-primary"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Estimation Comparison Cards */}
-                  <div className="rounded-xl border border-border/80 bg-surface-2/70 p-4 space-y-3">
-                    <div className="flex items-center justify-between text-xs font-bold">
-                      <span>Multi-Modal Rail DFC</span>
-                      <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                        RECOMMENDED
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      <div className="rounded-lg bg-surface p-2 border border-border/60">
-                        <div className="text-[10px] text-muted-foreground">Estimated Cost</div>
-                        <div className="mt-0.5 text-sm font-bold text-foreground">
-                          ₹{routeCalculation.railCostPerTeu.toLocaleString("en-IN")}
-                        </div>
-                      </div>
-                      <div className="rounded-lg bg-surface p-2 border border-border/60">
-                        <div className="text-[10px] text-muted-foreground">Transit Time</div>
-                        <div className="mt-0.5 text-sm font-bold text-primary">
-                          {routeCalculation.railTimeHrs} Hours
-                        </div>
-                      </div>
-                      <div className="rounded-lg bg-surface p-2 border border-border/60">
-                        <div className="text-[10px] text-muted-foreground">CO₂ Impact</div>
-                        <div className="mt-0.5 text-sm font-bold text-emerald-700">
-                          -{routeCalculation.co2SavedPct}% Green
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-2.5 text-xs text-emerald-800 flex items-center gap-2">
-                      <Sparkles className="size-4 shrink-0 text-emerald-600" />
-                      <span>
-                        Saves <strong>₹{routeCalculation.costSaved.toLocaleString("en-IN")}</strong>{" "}
-                        and{" "}
-                        <strong>
-                          {routeCalculation.roadTimeHrs - routeCalculation.railTimeHrs} hours
-                        </strong>{" "}
-                        vs highway trucks!
-                      </span>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        setIsBookModalOpen(true);
-                      }}
-                      className="w-full rounded-xl bg-primary py-2.5 text-xs font-bold text-primary-foreground shadow-md transition hover:brightness-110"
-                    >
-                      Book This Multimodal Corridor
-                    </button>
-                  </div>
-                </div>
-
-                {/* Corridor Live Speeds */}
-                <div className="rounded-2xl border border-border/70 bg-surface/80 p-5 space-y-3">
-                  <h3 className="text-sm font-bold">Dedicated Freight Corridor Speeds</h3>
-                  <div className="space-y-2 text-xs">
-                    {[
-                      {
-                        name: "Western DFC (Dadri ➔ JNPT)",
-                        speed: "78 km/h",
-                        status: "Optimal",
-                        util: "86%",
-                      },
-                      {
-                        name: "Eastern DFC (Ludhiana ➔ Dankuni)",
-                        speed: "74 km/h",
-                        status: "Optimal",
-                        util: "82%",
-                      },
-                      {
-                        name: "Golden Quadrilateral Rail Link",
-                        speed: "62 km/h",
-                        status: "Moderate",
-                        util: "91%",
-                      },
-                    ].map((c) => (
-                      <div
-                        key={c.name}
-                        className="flex items-center justify-between rounded-lg bg-surface-2 p-2.5 border border-border/60"
-                      >
-                        <div>
-                          <div className="font-semibold text-foreground">{c.name}</div>
-                          <div className="text-[10px] text-muted-foreground">
-                            Capacity Utilization: {c.util}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-mono font-bold text-primary">{c.speed}</div>
-                          <div className="text-[10px] font-semibold text-emerald-400">
-                            {c.status}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Animated Map View (Right 7 cols) */}
-              <div className="lg:col-span-7 rounded-2xl border border-border/70 bg-surface/80 p-5 shadow-sm space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <h3 className="text-base font-bold">Corridor Visualizer</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Switch between Real Satellite Imagery & Schematic Rail Corridors
-                    </p>
-                  </div>
-                  <div className="flex items-center rounded-xl border border-border/80 bg-surface-2 p-1 text-xs">
-                    <button
-                      onClick={() => setMapDisplayMode("satellite_gps")}
-                      className={`rounded-lg px-2.5 py-1 font-semibold transition ${
-                        mapDisplayMode === "satellite_gps"
-                          ? "bg-surface text-primary shadow-xs font-bold"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      🛰️ Real Satellite GPS
-                    </button>
-                    <button
-                      onClick={() => setMapDisplayMode("schematic_vector")}
-                      className={`rounded-lg px-2.5 py-1 font-semibold transition ${
-                        mapDisplayMode === "schematic_vector"
-                          ? "bg-surface text-primary shadow-xs font-bold"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      🗺️ Schematic Twin
-                    </button>
-                  </div>
-                </div>
-
-                <div className="min-h-[520px] w-full rounded-xl overflow-hidden border border-border/60">
-                  {mapDisplayMode === "satellite_gps" ? <RealGpsMap /> : <IndiaNetwork />}
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* TAB: Route Optimizer & Modal Split (Rail vs Road) */}
+        {activeTab === "optimizer" && (
+          <MultimodalRouteOptimizer onConsignmentDispatched={(msg) => showToast(msg)} />
         )}
 
         {/* TAB 3: Smart AI Opportunities & Savings (Amazon-style Opportunity Center) */}
@@ -1166,119 +925,6 @@ function Dashboard() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 5: IoT Edge Sensors & Telemetry */}
-        {activeTab === "telemetry" && (
-          <div className="space-y-6">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-2xl border border-border/80 bg-surface p-5">
-                <div className="flex items-center gap-3">
-                  <div className="grid size-10 place-items-center rounded-xl bg-blue-50 text-blue-700 border border-blue-200">
-                    <Radio className="size-5" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-muted-foreground">
-                      Active GPS Nodes
-                    </div>
-                    <div className="text-xl font-bold text-foreground">
-                      {hardware.gpsNodes.toLocaleString("en-IN")}
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-3 text-xs font-bold text-emerald-700">
-                  ● 99.8% Uplink Connectivity
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-border/80 bg-surface p-5">
-                <div className="flex items-center gap-3">
-                  <div className="grid size-10 place-items-center rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <Zap className="size-5" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-muted-foreground">
-                      Fuel Sensor Health
-                    </div>
-                    <div className="text-xl font-bold text-foreground">
-                      {hardware.fuelHealthy.toFixed(1)}%
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-3 text-xs font-bold text-emerald-700">
-                  ● Nominal Battery Levels
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-border/80 bg-surface p-5">
-                <div className="flex items-center gap-3">
-                  <div className="grid size-10 place-items-center rounded-xl bg-amber-50 text-amber-700 border border-amber-200">
-                    <AlertTriangle className="size-5" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-muted-foreground">
-                      Shock Alerts (24h)
-                    </div>
-                    <div className="text-xl font-bold text-foreground">
-                      {hardware.shockEvents24h}
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-3 text-xs font-medium text-muted-foreground">
-                  All containers secured
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-border/80 bg-surface p-5">
-                <div className="flex items-center gap-3">
-                  <div className="grid size-10 place-items-center rounded-xl bg-blue-50 text-primary border border-blue-200">
-                    <Activity className="size-5" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-muted-foreground">
-                      MQTT Message Pipe
-                    </div>
-                    <div className="text-xl font-bold text-foreground">
-                      {(hardware.mqttRate / 1000).toFixed(1)}k msg/s
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-3 text-xs font-bold text-primary">Zero packet loss</div>
-              </div>
-            </div>
-
-            {/* Critical Alerts Stream */}
-            <div className="rounded-2xl border border-border/70 bg-surface/80 p-5 space-y-3">
-              <h3 className="text-base font-bold">Real-Time Operational Alerts</h3>
-              <div className="space-y-2">
-                {alerts.map((a) => (
-                  <div
-                    key={a.id}
-                    className="flex items-center justify-between rounded-xl border border-border/60 bg-surface-2 p-3 text-xs"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase ${
-                          a.sev === "critical"
-                            ? "bg-rose-500/20 text-rose-400"
-                            : a.sev === "high"
-                              ? "bg-amber-500/20 text-amber-400"
-                              : "bg-sky-500/20 text-sky-400"
-                        }`}
-                      >
-                        {a.sev}
-                      </span>
-                      <span className="font-semibold text-foreground">{a.msg}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-muted-foreground font-mono">
-                      <span>Hub: {a.node}</span>
-                      <span>{a.t}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         )}
@@ -1550,7 +1196,7 @@ function Dashboard() {
                 <button
                   onClick={() => {
                     navigator.clipboard?.writeText?.(
-                      `https://railflow.ai/track/${selectedShipment.id}`,
+                      `https://freightwave.ai/track/${selectedShipment.id}`,
                     );
                     showToast("Tracking link copied to clipboard!");
                   }}

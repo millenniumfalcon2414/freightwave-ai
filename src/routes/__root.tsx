@@ -77,14 +77,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "RailFlow AI — Intelligent Rail–Road Freight Optimization" },
+      { title: "FreightWave AI — Intelligent Rail–Road Freight Optimization" },
       {
         name: "description",
         content:
           "AI-powered freight optimization across India's rail and road networks. Reduce cost, cut emissions, and orchestrate multimodal logistics in real time.",
       },
-      { name: "author", content: "RailFlow AI" },
-      { property: "og:title", content: "RailFlow AI — Intelligent Rail–Road Freight Optimization" },
+      { name: "author", content: "FreightWave AI" },
+      {
+        property: "og:title",
+        content: "FreightWave AI — Intelligent Rail–Road Freight Optimization",
+      },
       {
         property: "og:description",
         content:
@@ -94,7 +97,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       {
         name: "twitter:title",
-        content: "RailFlow AI — Intelligent Rail–Road Freight Optimization",
+        content: "FreightWave AI — Intelligent Rail–Road Freight Optimization",
       },
       {
         name: "twitter:description",

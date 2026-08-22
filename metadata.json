@@ -1,6 +1,6 @@
 {
-  "name": "RailFlow AI",
-  "description": "Intelligent multimodal rail & road freight platform with guided multi-step QA & RDSO inspection workflow, real-time Cargo Owner Tracking Portal, live GPS map, train telemetry, journey timeline, and IoT container condition monitoring.",
+  "name": "FreightWave AI",
+  "description": "Intelligent multimodal rail & road freight optimization platform with live GPS tracking, dynamic cargo distribution across rail & truck fleets, route optimizer, and RDSO QA verification.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

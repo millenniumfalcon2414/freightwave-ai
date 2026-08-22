@@ -303,12 +303,20 @@ export function ArrivalTrackingDashboard({
             </div>
           </div>
 
-          {/* DESTINATION TERMINAL READINESS */}
+          {/* DESTINATION TERMINAL / DOCK READINESS */}
           <div className="rounded-2xl border border-border bg-surface p-5 shadow-md space-y-3">
             <div className="flex items-center justify-between border-b border-border/80 pb-2.5">
               <div className="flex items-center gap-2">
-                <Building2 className="size-4 text-blue-600" />
-                <h3 className="text-sm font-bold text-foreground">Destination Offloading Siding</h3>
+                {activeShipment.transportMode === "ROAD" ? (
+                  <Truck className="size-4 text-emerald-600" />
+                ) : (
+                  <Building2 className="size-4 text-blue-600" />
+                )}
+                <h3 className="text-sm font-bold text-foreground">
+                  {activeShipment.transportMode === "ROAD"
+                    ? "Destination Logistics Park & Dock"
+                    : "Destination Offloading Siding"}
+                </h3>
               </div>
               <span className="font-mono text-[10px] text-blue-600 font-bold">RESERVED</span>
             </div>
@@ -316,7 +324,9 @@ export function ArrivalTrackingDashboard({
             <div className="space-y-2 text-xs">
               <div className="rounded-xl bg-surface-2 p-2.5 border border-border space-y-0.5">
                 <span className="text-[10px] text-muted-foreground block">
-                  Destination Terminal Hub
+                  {activeShipment.transportMode === "ROAD"
+                    ? "Destination Warehouse / Hub"
+                    : "Destination Terminal Hub"}
                 </span>
                 <strong className="text-foreground font-bold">
                   {activeShipment.destination.name}
@@ -326,21 +336,30 @@ export function ArrivalTrackingDashboard({
               <div className="grid grid-cols-2 gap-2 font-mono">
                 <div className="rounded-xl bg-surface-2 p-2.5 border border-border">
                   <span className="text-[10px] text-muted-foreground block font-sans">
-                    Track Berth
+                    {activeShipment.transportMode === "ROAD" ? "Unloading Bay" : "Track Berth"}
                   </span>
-                  <strong className="text-blue-600 font-bold">Siding Berth #4</strong>
+                  <strong className="text-blue-600 font-bold">
+                    {activeShipment.transportMode === "ROAD" ? "Dock Bay #12" : "Siding Berth #4"}
+                  </strong>
                 </div>
 
                 <div className="rounded-xl bg-surface-2 p-2.5 border border-border">
                   <span className="text-[10px] text-muted-foreground block font-sans">
-                    Offloading Crane
+                    {activeShipment.transportMode === "ROAD"
+                      ? "Handling Equipment"
+                      : "Offloading Crane"}
                   </span>
-                  <strong className="text-emerald-600 font-bold">RMG Crane #02</strong>
+                  <strong className="text-emerald-600 font-bold">
+                    {activeShipment.transportMode === "ROAD"
+                      ? "Forklift Unit #04"
+                      : "RMG Crane #02"}
+                  </strong>
                 </div>
               </div>
 
               <div className="rounded-xl bg-blue-50/80 dark:bg-blue-950/40 p-2.5 border border-blue-200 dark:border-blue-900 text-[11px] text-blue-900 dark:text-blue-300 font-semibold">
-                ✓ Consignee Gate Pass Pre-Approved for Immediate Offloading upon Arrival.
+                ✓ Consignee e-Way Bill & Gate Pass Pre-Approved for Immediate Offloading upon
+                Arrival.
               </div>
             </div>
           </div>
@@ -392,10 +411,21 @@ export function ArrivalTrackingDashboard({
                     </td>
 
                     <td className="py-3 px-3 font-sans">
-                      <div className="font-bold text-foreground">
-                        {s.origin.city} → {s.destination.city}
+                      <div className="font-bold text-foreground flex items-center gap-1">
+                        {s.transportMode === "ROAD" ? (
+                          <Truck className="size-3 text-emerald-600 shrink-0" />
+                        ) : (
+                          <Train className="size-3 text-blue-600 shrink-0" />
+                        )}
+                        <span>
+                          {s.origin.city} → {s.destination.city}
+                        </span>
                       </div>
-                      <div className="text-[10px] text-muted-foreground">{s.train.trainName}</div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {s.transportMode === "ROAD" && s.road
+                          ? `${s.road.transporterName} (${s.road.vehicleNumber})`
+                          : s.train?.trainName || "Indian Railways Freight"}
+                      </div>
                     </td>
 
                     <td className="py-3 px-3">

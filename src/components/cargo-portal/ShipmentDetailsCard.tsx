@@ -4,6 +4,7 @@ import {
   FileText,
   Weight,
   Train,
+  Truck,
   Calendar,
   MapPin,
   Tag,
@@ -19,15 +20,37 @@ interface ShipmentDetailsCardProps {
 }
 
 export function ShipmentDetailsCard({ shipment }: ShipmentDetailsCardProps) {
+  const isRoad = shipment.transportMode === "ROAD";
+  const isMultimodal = shipment.transportMode === "MULTIMODAL";
+
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 shadow-md space-y-4">
+    <div
+      id="shipment-freight-details-card"
+      className="rounded-2xl border border-border bg-surface p-5 shadow-md space-y-4"
+    >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border/70 pb-3">
         <div className="flex items-center gap-2">
-          <div className="flex size-7 items-center justify-center rounded-lg bg-blue-600/10 text-blue-600">
-            <Package className="size-4" />
+          <div
+            className={`flex size-7 items-center justify-center rounded-lg ${isRoad ? "bg-emerald-600/10 text-emerald-600" : "bg-blue-600/10 text-blue-600"}`}
+          >
+            {isRoad ? <Truck className="size-4" /> : <Package className="size-4" />}
           </div>
-          <h3 className="text-sm font-bold text-foreground">Shipment & Freight Details</h3>
+          <div>
+            <h3 className="text-sm font-bold text-foreground">
+              {isRoad
+                ? "Roadway Freight & Vehicle Details"
+                : isMultimodal
+                  ? "Multimodal Rail-Road Details"
+                  : "Rail Shipment & Freight Details"}
+            </h3>
+            <span className="text-[10px] text-muted-foreground font-medium">
+              Mode:{" "}
+              <strong className={isRoad ? "text-emerald-600" : "text-blue-600"}>
+                {shipment.transportMode || "RAIL"} FREIGHT
+              </strong>
+            </span>
+          </div>
         </div>
         <span className="rounded-full bg-surface-2 px-2.5 py-0.5 font-mono text-[10px] font-bold text-muted-foreground border border-border">
           {shipment.consignmentNumber}
@@ -40,7 +63,7 @@ export function ShipmentDetailsCard({ shipment }: ShipmentDetailsCardProps) {
         <div className="rounded-xl border border-border/80 bg-surface-2/40 p-3 space-y-0.5">
           <div className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
             <Hash className="size-3 text-blue-600" />
-            <span>Cargo ID</span>
+            <span>Cargo Tracking ID</span>
           </div>
           <div className="font-mono font-black text-foreground text-sm">{shipment.id}</div>
         </div>
@@ -49,33 +72,41 @@ export function ShipmentDetailsCard({ shipment }: ShipmentDetailsCardProps) {
         <div className="rounded-xl border border-border/80 bg-surface-2/40 p-3 space-y-0.5">
           <div className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
             <FileText className="size-3 text-blue-600" />
-            <span>Consignment (e-RR)</span>
+            <span>{isRoad ? "Lorry Receipt (LR)" : "Consignment (e-RR)"}</span>
           </div>
           <div className="font-mono font-bold text-foreground truncate">
             {shipment.consignmentNumber}
           </div>
         </div>
 
-        {/* Freight Number & Name */}
+        {/* Freight / Vehicle Number */}
         <div className="rounded-xl border border-border/80 bg-surface-2/40 p-3 space-y-0.5">
           <div className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
-            <Train className="size-3 text-blue-600" />
-            <span>Freight Number</span>
+            {isRoad ? (
+              <Truck className="size-3 text-emerald-600" />
+            ) : (
+              <Train className="size-3 text-blue-600" />
+            )}
+            <span>{isRoad ? "Vehicle Registration" : "Freight Train Number"}</span>
           </div>
-          <div className="font-bold text-foreground truncate">{shipment.train.trainNumber}</div>
+          <div className="font-bold text-foreground truncate">
+            {isRoad ? shipment.road?.vehicleNumber : shipment.train?.trainNumber}
+          </div>
           <div className="text-[10px] text-muted-foreground truncate">
-            {shipment.train.trainName}
+            {isRoad ? shipment.road?.transporterName : shipment.train?.trainName}
           </div>
         </div>
 
-        {/* Wagon Number */}
+        {/* Wagon / Trailer Unit */}
         <div className="rounded-xl border border-border/80 bg-surface-2/40 p-3 space-y-0.5">
-          <div className="text-[10px] uppercase font-bold text-muted-foreground">Wagon Number</div>
+          <div className="text-[10px] uppercase font-bold text-muted-foreground">
+            {isRoad ? "Trailer / Reefer Type" : "Wagon Number & Type"}
+          </div>
           <div className="font-mono font-black text-blue-600 text-sm">
-            {shipment.train.wagonNumber}
+            {isRoad ? shipment.road?.trailerType : shipment.train?.wagonNumber}
           </div>
           <div className="text-[10px] text-muted-foreground truncate">
-            {shipment.train.wagonType}
+            {isRoad ? shipment.road?.nationalPermitNumber : shipment.train?.wagonType}
           </div>
         </div>
 
@@ -109,7 +140,7 @@ export function ShipmentDetailsCard({ shipment }: ShipmentDetailsCardProps) {
         {/* Origin */}
         <div className="rounded-xl border border-border/80 bg-emerald-50/50 dark:bg-emerald-950/20 p-3 border-l-4 border-l-emerald-500">
           <div className="text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-400">
-            Origin & Booking Details
+            {isRoad ? "Origin Logistics Hub / Dock" : "Origin & Booking Details"}
           </div>
           <div className="font-bold text-foreground text-sm mt-0.5">{shipment.origin.name}</div>
           <div className="text-[11px] text-muted-foreground mt-0.5">
@@ -127,7 +158,7 @@ export function ShipmentDetailsCard({ shipment }: ShipmentDetailsCardProps) {
         {/* Destination */}
         <div className="rounded-xl border border-border/80 bg-blue-50/50 dark:bg-blue-950/20 p-3 border-l-4 border-l-blue-500">
           <div className="text-[10px] uppercase font-bold text-blue-700 dark:text-blue-400">
-            Destination & Expected Arrival
+            {isRoad ? "Destination Delivery Center" : "Destination & Expected Arrival"}
           </div>
           <div className="font-bold text-foreground text-sm mt-0.5">
             {shipment.destination.name}

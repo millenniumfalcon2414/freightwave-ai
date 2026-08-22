@@ -20,7 +20,7 @@ import {
 import { useState } from "react";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { IndiaNetwork } from "@/components/site/IndiaNetwork";
+import { HeroLiveTracker } from "@/components/site/HeroLiveTracker";
 import { RealGpsMap } from "@/components/site/RealGpsMap";
 import { AICopilot } from "@/components/site/AICopilot";
 
@@ -38,7 +38,7 @@ function Landing() {
       <Features />
       <OptimizationShowcase />
       <DigitalTwin />
-      <HardwareSection />
+      <ModalDistributionSection />
       <Sustainability />
       <Testimonials />
       <Faq />
@@ -60,15 +60,16 @@ function Hero() {
         <div className="flex flex-col justify-center">
           <div className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-primary">
             <span className="size-1.5 rounded-full bg-primary animate-pulse-soft" />
-            Western & Eastern DFC · Live
+            Western & Eastern DFC · Live Multimodal Hub
           </div>
           <h1 className="mt-6 text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
             Optimize every shipment with{" "}
             <span className="text-gradient">AI-powered rail–road intelligence</span>
           </h1>
           <p className="mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
-            Reduce logistics cost, lower carbon emissions, and maximize freight efficiency across
-            India's multimodal network — orchestrated in real time by RailFlow AI.
+            Reduce logistics cost, lower carbon emissions, and dynamically distribute cargo across
+            India's freight corridors, electric rail rakes, and highway trucks — orchestrated in
+            real time by FreightWave AI.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -84,7 +85,7 @@ function Hero() {
               to="/dashboard"
               className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface/80 px-5 py-3 text-sm font-semibold text-foreground/90 transition hover:border-primary/40"
             >
-              <span>Operator Dashboard</span>
+              <span>Operator Dashboard & Route Optimizer</span>
             </Link>
           </div>
 
@@ -104,8 +105,8 @@ function Hero() {
           </div>
         </div>
 
-        <div className="relative h-[420px] sm:h-[520px] lg:h-[600px]">
-          <IndiaNetwork />
+        <div className="relative min-h-[460px] lg:h-[540px]">
+          <HeroLiveTracker />
         </div>
       </div>
     </section>
@@ -232,19 +233,20 @@ function OptimizationShowcase() {
       <div className="mx-auto grid max-w-[1400px] gap-10 px-6 lg:grid-cols-2 lg:gap-16">
         <div className="flex flex-col justify-center">
           <SectionLabel
-            eyebrow="AI Recommendation Engine"
-            title="Three modes. One optimal answer."
+            eyebrow="AI Multimodal Engine"
+            title="Railways, Roadways, or Both — Optimized in seconds"
             align="left"
           />
           <p className="mt-4 max-w-md text-muted-foreground">
-            Enter origin, destination, cargo, weight, and priority. RailFlow returns the optimal
-            mode with full reasoning — cost, time, carbon, and operational risk all weighted.
+            Enter origin, destination, cargo type, tonnage, and delivery priority. FreightWave AI
+            automatically models all permutations across Dedicated Freight Corridors, direct highway
+            trucking, and hybrid multimodal splits.
           </p>
           <ul className="mt-6 space-y-3 text-sm">
             {[
-              "Explainable confidence score for every recommendation",
-              "Live availability of rakes, terminals, and corridor congestion",
-              "₹ savings and ton-CO₂ avoided previewed before commit",
+              "Dynamic modal allocation: 100% Rail, 100% Road Truck, or Optimized Multimodal Split",
+              "Live slot availability of DFC rakes, transshipment ICDs, and expressway lanes",
+              "Instant preview of ₹ cost savings, transit time, and Scope 3 carbon reduction",
             ].map((x) => (
               <li key={x} className="flex items-start gap-3">
                 <span className="mt-1.5 size-1.5 rounded-full bg-primary" />
@@ -257,25 +259,25 @@ function OptimizationShowcase() {
         <div className="rounded-2xl glass p-5">
           <div className="flex items-center justify-between border-b border-border pb-3">
             <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Optimization · Live
+              Optimization · Live Model
             </span>
             <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
-              Confidence 94%
+              Confidence 96%
             </span>
           </div>
 
           <div className="mt-4 grid gap-2">
             <Row label="Origin" value="Delhi / Dadri ICD" />
-            <Row label="Destination" value="Mumbai / JNPT" />
-            <Row label="Cargo" value="Containerized — 1,420 t" />
-            <Row label="Priority" value="Standard" />
+            <Row label="Destination" value="Mumbai / JNPT Port" />
+            <Row label="Cargo Payload" value="Containerized FMCG — 1,420 t" />
+            <Row label="Priority" value="Balanced Cost & SLA" />
           </div>
 
           <div className="mt-5 grid grid-cols-3 gap-2">
             {[
-              { m: "Road", cost: "₹14.8L", eta: "38 h", co2: "62 t" },
-              { m: "Rail + Truck", cost: "₹12.0L", eta: "29 h", co2: "38 t", best: true },
-              { m: "Rail", cost: "₹11.2L", eta: "34 h", co2: "22 t" },
+              { m: "Road Trucks", cost: "₹14.8L", eta: "38 h", co2: "62 t" },
+              { m: "Rail + Trucks", cost: "₹11.8L", eta: "28 h", co2: "36 t", best: true },
+              { m: "Rail DFC", cost: "₹11.2L", eta: "34 h", co2: "22 t" },
             ].map((r) => (
               <div
                 key={r.m}
@@ -298,7 +300,7 @@ function OptimizationShowcase() {
                 </div>
                 {r.best ? (
                   <div className="mt-2 inline-block rounded-full bg-primary px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-primary-foreground">
-                    Recommended
+                    Optimal Split
                   </div>
                 ) : null}
               </div>
@@ -306,10 +308,13 @@ function OptimizationShowcase() {
           </div>
 
           <div className="mt-4 rounded-lg border border-border bg-background/60 p-3 text-xs text-muted-foreground">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-accent">Why</span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
+              Modal Recommendation
+            </span>
             <p className="mt-1 leading-relaxed">
-              Rail-leg DEL→NAG saves ₹2.8L and 38% CO₂. Last-mile NAG→MUM by truck keeps ETA inside
-              the SLA window while avoiding JNPT inland congestion.
+              Electrified WDFC rail trunk line (Dadri ➔ Sanand) handles 80% volume at 35% lower
+              cost. First/last-mile drayage trucks ensure direct factory gate delivery without
+              bottleneck delays.
             </p>
           </div>
         </div>
@@ -330,124 +335,113 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 function DigitalTwin() {
-  const [twinMode, setTwinMode] = useState<"satellite" | "schematic">("satellite");
-
   return (
     <section className="border-b border-border/60 py-20">
       <div className="mx-auto max-w-[1400px] px-6">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <SectionLabel
             eyebrow="Space-Ground Telemetry"
-            title="Real GPS Satellite Spatial Map & Digital Twin"
+            title="Real GPS Satellite Spatial Map & Corridor Twin"
           />
-          <div className="flex items-center rounded-xl border border-border bg-surface-2 p-1 text-xs">
-            <button
-              onClick={() => setTwinMode("satellite")}
-              className={`rounded-lg px-3 py-1.5 font-semibold transition ${
-                twinMode === "satellite"
-                  ? "bg-surface text-primary shadow-xs font-bold"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              🛰️ Real Satellite Imagery & GPS
-            </button>
-            <button
-              onClick={() => setTwinMode("schematic")}
-              className={`rounded-lg px-3 py-1.5 font-semibold transition ${
-                twinMode === "schematic"
-                  ? "bg-surface text-primary shadow-xs font-bold"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              🗺️ Schematic Freight Grid
-            </button>
+          <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 font-bold text-emerald-600 border border-emerald-500/20">
+              <span className="size-1.5 rounded-full bg-emerald-500 animate-ping" />
+              <span>LIVE SATELLITE & SENSOR TELEMETRY</span>
+            </span>
           </div>
         </div>
 
         <div className="mt-8">
-          {twinMode === "satellite" ? (
-            <RealGpsMap />
-          ) : (
-            <div className="grid gap-4 lg:grid-cols-3">
-              <div className="lg:col-span-2 h-[480px]">
-                <IndiaNetwork />
-              </div>
-              <div className="grid gap-4">
-                {[
-                  { t: "Active Rail Super-Rakes", v: "1,248", s: "+12 live on WDFC & EDFC" },
-                  { t: "Multimodal Terminals", v: "84", s: "12 major ports · 72 ICDs" },
-                  { t: "Avg Dwell Time", v: "4.2 h", s: "−18% vs highway benchmark" },
-                ].map((x) => (
-                  <div key={x.t} className="rounded-xl glass p-5">
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                      {x.t}
-                    </div>
-                    <div className="mt-2 font-mono text-3xl font-semibold">{x.v}</div>
-                    <div className="mt-1 text-xs text-success">{x.s}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <RealGpsMap />
         </div>
       </div>
     </section>
   );
 }
 
-function HardwareSection() {
-  const sensors = [
-    { i: Radio, t: "GPS Module", v: "0.5 m precision" },
-    { i: Boxes, t: "Load Cell", v: "Live cargo weight" },
-    { i: Zap, t: "Fuel Sensor", v: "Theft & burn rate" },
-    { i: AlertTriangle, t: "MPU6050", v: "Shock detection" },
-    { i: Cpu, t: "RFID Reader", v: "Asset handoff" },
-    { i: Leaf, t: "Temp / Humidity", v: "Cold-chain integrity" },
+function ModalDistributionSection() {
+  const modes = [
+    {
+      title: "Rail Freight (DFC Corridors)",
+      icon: Train,
+      badge: "Highest Volume & Lowest Cost",
+      points: [
+        "Up to 4,000 Tonnes per electric rake (90+ TEU containers)",
+        "Zero highway toll tariffs & 65% lower energy cost per ton-km",
+        "Western & Eastern DFC continuous electrified tracks",
+      ],
+      idealFor: "Heavy bulk, long-haul corridors (>450 km), minerals, steel, auto rakes",
+      tagColor: "bg-blue-50 text-blue-700 border-blue-200",
+    },
+    {
+      title: "Roadway Freight (Highway Fleets)",
+      icon: Truck,
+      badge: "Fastest Door-to-Door & Flexible",
+      points: [
+        "Direct point-to-point dispatch without rail yard transshipment",
+        "Rapid turnaround for urgent SLA & perishables",
+        "National Expressway network access (NE4, NE1, NH48)",
+      ],
+      idealFor: "Short/mid-haul (<400 km), high-urgency LTL/FTL, perishable cold-chain",
+      tagColor: "bg-amber-50 text-amber-700 border-amber-200",
+    },
+    {
+      title: "Multimodal Hybrid (Rail + Road)",
+      icon: Boxes,
+      badge: "Optimal Cost & SLA Balance",
+      points: [
+        "Long-haul electric rail trunk + First & last-mile road drayage",
+        "Automated ICD terminal transshipment scheduling",
+        "Cuts overall transport cost by 32% while meeting strict delivery deadlines",
+      ],
+      idealFor: "Nationwide containerized distribution, retail FMCG, e-commerce intermodal",
+      tagColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    },
   ];
+
   return (
-    <section id="hardware" className="border-b border-border/60 bg-surface/30 py-20">
+    <section className="border-b border-border/60 bg-surface/30 py-20">
       <div className="mx-auto max-w-[1400px] px-6">
         <SectionLabel
-          eyebrow="Hardware Integration"
-          title="ESP32 edge nodes on every rake & truck"
+          eyebrow="Cargo Modal Allocation"
+          title="Intelligent Distribution across Railways, Roadways & Intermodal"
         />
-        <div className="mt-10 grid gap-6 lg:grid-cols-[1fr_1.2fr]">
-          <div className="rounded-2xl glass p-6">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Architecture
-            </div>
-            <div className="mt-6 flex flex-col items-stretch gap-2">
-              {[
-                "ESP32 Edge Node",
-                "Sensors (GPS · Load · Temp · IMU · RFID · Fuel)",
-                "MQTT Broker",
-                "Cloud Database",
-                "RailFlow AI Platform",
-              ].map((s, i, a) => (
-                <div key={s} className="flex flex-col items-center">
-                  <div className="w-full rounded-md border border-border bg-background/60 px-4 py-3 text-center text-sm font-medium">
-                    {s}
+        <div className="mt-10 grid gap-6 md:grid-cols-3">
+          {modes.map((m) => (
+            <div
+              key={m.title}
+              className="rounded-2xl glass p-6 flex flex-col justify-between hover:border-primary/50 transition"
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="grid size-11 place-items-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+                    <m.icon className="size-5" />
                   </div>
-                  {i < a.length - 1 ? <ChevronDown className="my-1 size-4 text-primary" /> : null}
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${m.tagColor}`}
+                  >
+                    {m.badge}
+                  </span>
                 </div>
-              ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {sensors.map((s) => (
-              <div key={s.t} className="rounded-xl glass p-4">
-                <s.i className="size-5 text-primary" />
-                <div className="mt-3 text-sm font-semibold">{s.t}</div>
-                <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                  {s.v}
-                </div>
-                <div className="mt-3 flex items-center gap-1.5">
-                  <span className="size-1.5 rounded-full bg-success animate-pulse-soft" />
-                  <span className="font-mono text-[10px] uppercase text-success">online</span>
-                </div>
+
+                <h3 className="mt-4 text-base font-bold text-foreground">{m.title}</h3>
+
+                <ul className="mt-4 space-y-2 text-xs text-muted-foreground">
+                  {m.points.map((p) => (
+                    <li key={p} className="flex items-start gap-2">
+                      <span className="mt-1 size-1.5 shrink-0 rounded-full bg-primary" />
+                      <span>{p}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            ))}
-          </div>
+
+              <div className="mt-6 rounded-xl bg-surface-2 p-3 border border-border/70 text-xs">
+                <span className="font-semibold text-foreground">Best Suited For:</span>
+                <p className="mt-0.5 text-muted-foreground">{m.idealFor}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>
@@ -465,8 +459,8 @@ function Sustainability() {
             align="left"
           />
           <p className="mt-4 max-w-md text-muted-foreground">
-            Rail emits roughly one-third the CO₂ of road per ton-kilometre. RailFlow's modal-shift
-            engine has avoided
+            Rail emits roughly one-third the CO₂ of road per ton-kilometre. FreightWave's
+            modal-shift engine has avoided
             <span className="font-semibold text-foreground"> 82,000 tonnes of CO₂ </span>
             for our customers in the last 12 months.
           </p>
@@ -504,7 +498,7 @@ function Sustainability() {
 function Testimonials() {
   const items = [
     {
-      q: "RailFlow turned our DFC operations into a single command center. We cut empty-running by 41% in one quarter.",
+      q: "FreightWave turned our DFC operations into a single command center. We cut empty-running by 41% in one quarter.",
       a: "Director, National Freight Operator",
     },
     {
@@ -540,16 +534,16 @@ function Testimonials() {
 function Faq() {
   const items = [
     {
-      q: "Does RailFlow integrate with FOIS and existing TMS?",
-      a: "Yes. Connectors for FOIS, SAP TM, Oracle OTM, and custom REST APIs ship out of the box.",
+      q: "Does FreightWave integrate with FOIS and existing TMS?",
+      a: "Yes. Connectors for FOIS, ULIP, FASTag, SAP TM, Oracle OTM, and custom REST APIs ship out of the box.",
     },
     {
-      q: "How accurate is the AI optimization?",
-      a: "On benchmark corridors we average 94% confidence with realized savings within ±6% of forecast.",
+      q: "How does the AI optimize cargo distribution across Rail and Road?",
+      a: "The engine analyzes payload tonnage, corridor congestion, DFC rake schedules, toll tariffs, and deadline constraints to recommend either 100% Rail, 100% Road, or an optimal multimodal split.",
     },
     {
-      q: "Is hardware required?",
-      a: "No. The platform runs on existing data feeds. ESP32 edge nodes unlock real-time cargo telemetry and theft detection.",
+      q: "Is proprietary hardware required?",
+      a: "No. FreightWave AI runs directly on standard cloud telematics, national freight portals (ULIP/FOIS), FASTag GPS feeds, and modern REST APIs without needing custom edge hardware.",
     },
     {
       q: "How is data secured?",
@@ -606,14 +600,17 @@ function CtaBand() {
             </div>
             <div className="flex flex-wrap items-center gap-3 lg:justify-end">
               <Link
-                to="/dashboard"
-                className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground glow-primary"
+                to="/signup"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground glow-primary hover:brightness-110 transition shadow-md"
               >
-                Launch Platform <ArrowRight className="size-4" />
+                <span>Register Enterprise Account</span> <ArrowRight className="size-4" />
               </Link>
-              <button className="inline-flex items-center gap-2 rounded-md border border-border bg-surface/60 px-5 py-3 text-sm font-medium hover:border-primary/40">
-                Request Pilot
-              </button>
+              <Link
+                to="/dashboard"
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface/80 px-5 py-3 text-sm font-semibold hover:border-primary/40 transition"
+              >
+                Launch Live Sandbox
+              </Link>
             </div>
           </div>
         </div>

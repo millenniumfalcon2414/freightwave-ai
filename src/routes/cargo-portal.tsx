@@ -26,6 +26,7 @@ import { EtaCard } from "@/components/cargo-portal/EtaCard";
 import { ShipmentDetailsCard } from "@/components/cargo-portal/ShipmentDetailsCard";
 import { JourneyTimeline } from "@/components/cargo-portal/JourneyTimeline";
 import { TrainInfoCard } from "@/components/cargo-portal/TrainInfoCard";
+import { RoadInfoCard } from "@/components/cargo-portal/RoadInfoCard";
 import { CargoConditionCard } from "@/components/cargo-portal/CargoConditionCard";
 import { AlertsPanel } from "@/components/cargo-portal/AlertsPanel";
 import { MyShipmentsView } from "@/components/cargo-portal/MyShipmentsView";
@@ -93,7 +94,10 @@ function CargoPortalPage() {
         s.id.toUpperCase() === query ||
         s.id.toUpperCase().includes(query) ||
         s.consignmentNumber.toUpperCase().includes(query) ||
-        s.train.wagonNumber.toUpperCase().includes(query),
+        (s.train && s.train.wagonNumber.toUpperCase().includes(query)) ||
+        (s.train && s.train.trainNumber.toUpperCase().includes(query)) ||
+        (s.road && s.road.vehicleNumber.toUpperCase().includes(query)) ||
+        (s.road && s.road.transporterName.toUpperCase().includes(query)),
     );
 
     if (match) {
@@ -101,13 +105,13 @@ function CargoPortalPage() {
       setActiveTab("dashboard");
       setSearchFeedback({
         status: "found",
-        message: `Cargo Found ✓ — Displaying live journey for ${match.id} (${match.origin.city} → ${match.destination.city})`,
+        message: `Cargo Found ✓ — Displaying live journey for ${match.id} (${match.origin.city} → ${match.destination.city}) [Mode: ${match.transportMode || "RAIL"}]`,
       });
       setTimeout(() => setSearchFeedback({ status: null, message: "" }), 5000);
     } else {
       setSearchFeedback({
         status: "not_found",
-        message: `No active cargo found for "${query}". Try sample ID: RAIL-IND-28491, RAIL-IND-55912, or RAIL-IND-88231.`,
+        message: `No active cargo found for "${query}". Try sample ID: RAIL-IND-28491, ROAD-IND-99410, or ROAD-IND-64102.`,
       });
       setTimeout(() => setSearchFeedback({ status: null, message: "" }), 6000);
     }
@@ -176,23 +180,41 @@ function CargoPortalPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5 font-mono text-[11px]">
-              {shipments.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => {
-                    setActiveShipmentId(s.id);
-                    setActiveTab("dashboard");
-                  }}
-                  className={`rounded-lg px-2.5 py-1 font-bold transition flex items-center gap-1.5 ${
-                    activeShipmentId === s.id
-                      ? "bg-blue-600 text-white shadow-xs"
-                      : "bg-surface border border-border text-foreground hover:bg-surface-2"
-                  }`}
-                >
-                  <span>{s.id}</span>
-                  <span className="text-[9px] opacity-80">({s.origin.city})</span>
-                </button>
-              ))}
+              {shipments.map((s) => {
+                const isRoad = s.transportMode === "ROAD";
+                const isMultimodal = s.transportMode === "MULTIMODAL";
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      setActiveShipmentId(s.id);
+                      setActiveTab("dashboard");
+                    }}
+                    className={`rounded-lg px-2.5 py-1 font-bold transition flex items-center gap-1.5 ${
+                      activeShipmentId === s.id
+                        ? isRoad
+                          ? "bg-emerald-600 text-white shadow-xs"
+                          : "bg-blue-600 text-white shadow-xs"
+                        : "bg-surface border border-border text-foreground hover:bg-surface-2"
+                    }`}
+                  >
+                    {isRoad ? (
+                      <Truck className="size-3 text-emerald-400" />
+                    ) : isMultimodal ? (
+                      <span className="flex items-center gap-0.5">
+                        <Train className="size-3 text-blue-400" />
+                        <Truck className="size-2.5 text-emerald-400" />
+                      </span>
+                    ) : (
+                      <Train className="size-3 text-blue-400" />
+                    )}
+                    <span>{s.id}</span>
+                    <span className="text-[9px] opacity-80 font-sans">
+                      ({isRoad ? "Road" : isMultimodal ? "Multi" : "Rail"})
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -252,12 +274,37 @@ function CargoPortalPage() {
                   isRefreshing={isRefreshingGps}
                 />
 
-                {/* Train Information & Locomotive Telemetry */}
-                <TrainInfoCard
-                  train={activeShipment.train}
-                  expectedDeliveryTime={activeShipment.estimatedDeliveryTime}
-                  expectedDeliveryDate={activeShipment.estimatedDeliveryDate}
-                />
+                {/* Carrier Information & Telemetry: Road or Train */}
+                {activeShipment.transportMode === "ROAD" && activeShipment.road ? (
+                  <RoadInfoCard
+                    road={activeShipment.road}
+                    expectedDeliveryTime={activeShipment.estimatedDeliveryTime}
+                    expectedDeliveryDate={activeShipment.estimatedDeliveryDate}
+                  />
+                ) : activeShipment.transportMode === "MULTIMODAL" ? (
+                  <div className="space-y-4">
+                    {activeShipment.train && (
+                      <TrainInfoCard
+                        train={activeShipment.train}
+                        expectedDeliveryTime={activeShipment.estimatedDeliveryTime}
+                        expectedDeliveryDate={activeShipment.estimatedDeliveryDate}
+                      />
+                    )}
+                    {activeShipment.road && (
+                      <RoadInfoCard
+                        road={activeShipment.road}
+                        expectedDeliveryTime={activeShipment.estimatedDeliveryTime}
+                        expectedDeliveryDate={activeShipment.estimatedDeliveryDate}
+                      />
+                    )}
+                  </div>
+                ) : activeShipment.train ? (
+                  <TrainInfoCard
+                    train={activeShipment.train}
+                    expectedDeliveryTime={activeShipment.estimatedDeliveryTime}
+                    expectedDeliveryDate={activeShipment.estimatedDeliveryDate}
+                  />
+                ) : null}
 
                 {/* IoT Sensor Health & Telemetry */}
                 <CargoConditionCard condition={activeShipment.condition} />

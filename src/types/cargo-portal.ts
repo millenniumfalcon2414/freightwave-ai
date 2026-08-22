@@ -94,6 +94,33 @@ export interface TrainCarrierDetails {
   trackSection: string;
 }
 
+export interface RoadCarrierDetails {
+  vehicleNumber: string; // e.g. "MH-12-RN-8812"
+  vehicleModel: string; // e.g. "BharatBenz 4028T Quad-Axle Heavy Hauler"
+  trailerType: string; // e.g. "40ft Multi-Axle Low-Bed", "32ft Reefer Container", "Quad-Axle Heavy Hauler"
+  transporterName: string; // e.g. "All-India Logistics Fleet Corp"
+  driverName: string;
+  driverPhone: string;
+  driverLicenseNumber: string; // Sarathi DL No
+  driverVigilanceScorePct: number;
+  fastagTagId: string;
+  fastagStatus: "Active · Linked" | "Low Balance Warning" | "Toll Auto-Debited";
+  lastTollPlazaPassed: string;
+  nextTollPlaza: string;
+  eWayBillNumber: string;
+  nationalPermitNumber: string;
+  currentHighwayCorridor: string; // e.g. "NH-48 Golden Quadrilateral / Delhi-Mumbai Expressway"
+  currentSpeedKmh: number;
+  fuelLevelPct: number;
+  adBlueLevelPct: number;
+  tyrePressurePsi: number;
+  roadStatus:
+    | "Cruising on Expressway"
+    | "Passing Toll Plaza"
+    | "Rest Stop / Driver Halted"
+    | "Delayed by Highway Traffic";
+}
+
 export interface DeliveryProof {
   deliveredAt: string;
   destinationAddress: string;
@@ -108,11 +135,12 @@ export interface DeliveryProof {
 }
 
 export interface CargoShipment {
-  id: string; // e.g. "RAIL-IND-28491"
-  consignmentNumber: string; // e.g. "RR-CR-2026-994182"
+  id: string; // e.g. "RAIL-IND-28491" or "ROAD-IND-99410"
+  consignmentNumber: string; // e.g. "RR-CR-2026-994182" or "LR-MH-2026-881290"
   title: string;
   customerName: string;
   customerId: string;
+  transportMode: "RAIL" | "ROAD" | "MULTIMODAL";
 
   // High-level UX summary
   currentLocationName: string;
@@ -151,7 +179,8 @@ export interface CargoShipment {
     lng: number;
     headingDeg: number;
   };
-  railRouteCoords: [number, number][];
+  railRouteCoords?: [number, number][];
+  roadRouteCoords?: [number, number][];
   roadDrayageCoords?: [number, number][];
   intermediateWaypoints: GeoLocation[];
 
@@ -174,8 +203,9 @@ export interface CargoShipment {
   packageType: string; // e.g., "Palletized Containers", "Heavy Steel Coils", "Reefer Totes"
   hazardousCode?: string;
 
-  // Train & Multimodal Carrier info
-  train: TrainCarrierDetails;
+  // Carrier info for Rail & Road
+  train?: TrainCarrierDetails;
+  road?: RoadCarrierDetails;
   roadDrayageTruck?: {
     vehicleNumber: string;
     driverName: string;

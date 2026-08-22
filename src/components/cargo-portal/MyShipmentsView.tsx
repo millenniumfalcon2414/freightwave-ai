@@ -28,24 +28,22 @@ export function MyShipmentsView({
   onSelectShipment,
   onTrackShipment,
 }: MyShipmentsViewProps) {
-  const [filter, setFilter] = useState<"ALL" | "IN_TRANSIT" | "DELIVERED" | "DELAYED" | "PENDING">(
-    "ALL",
-  );
+  const [filter, setFilter] = useState<
+    "ALL" | "RAIL" | "ROAD" | "MULTIMODAL" | "IN_TRANSIT" | "DELIVERED" | "DELAYED"
+  >("ALL");
   const [search, setSearch] = useState("");
 
   const filteredShipments = shipments.filter((s) => {
+    // Mode filters
+    if (filter === "RAIL" && s.transportMode !== "RAIL") return false;
+    if (filter === "ROAD" && s.transportMode !== "ROAD") return false;
+    if (filter === "MULTIMODAL" && s.transportMode !== "MULTIMODAL") return false;
+
     // Status filter
     if (filter === "IN_TRANSIT" && s.status !== "IN_TRANSIT" && s.status !== "OUT_FOR_DELIVERY")
       return false;
     if (filter === "DELIVERED" && s.status !== "DELIVERED") return false;
     if (filter === "DELAYED" && s.status !== "DELAYED") return false;
-    if (
-      filter === "PENDING" &&
-      s.status !== "BOOKED" &&
-      s.status !== "LOADED" &&
-      s.status !== "PENDING"
-    )
-      return false;
 
     // Search filter
     if (search.trim()) {
@@ -56,7 +54,9 @@ export function MyShipmentsView({
         s.cargoType.toLowerCase().includes(q) ||
         s.origin.city.toLowerCase().includes(q) ||
         s.destination.city.toLowerCase().includes(q) ||
-        s.train.trainNumber.toLowerCase().includes(q)
+        (s.train && s.train.trainNumber.toLowerCase().includes(q)) ||
+        (s.road && s.road.vehicleNumber.toLowerCase().includes(q)) ||
+        (s.road && s.road.transporterName.toLowerCase().includes(q))
       );
     }
 
@@ -97,15 +97,16 @@ export function MyShipmentsView({
   };
 
   return (
-    <div className="space-y-5">
+    <div id="my-shipments-management-view" className="space-y-5">
       {/* Search & Filter Header Card */}
       <div className="rounded-2xl border border-border bg-surface p-5 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-black tracking-tight text-foreground">
-            My Consignments & Rakes
+            Multimodal Consignments & Fleet Hauls
           </h2>
           <p className="text-xs text-muted-foreground">
-            Manage, track, and review all active and historical multimodal railway cargo shipments.
+            Manage, track, and review all active Indian Railways rakes and Commercial Roadway heavy
+            trucks.
           </p>
         </div>
 
@@ -117,7 +118,7 @@ export function MyShipmentsView({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search ID, Cargo, City..."
+              placeholder="Search ID, Truck No, City..."
               className="w-full rounded-xl border border-border bg-surface-2/60 py-2 pl-9 pr-3 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
@@ -135,6 +136,38 @@ export function MyShipmentsView({
               All ({shipments.length})
             </button>
             <button
+              onClick={() => setFilter("ROAD")}
+              className={`rounded-xl px-3 py-2 font-semibold transition flex items-center gap-1 ${
+                filter === "ROAD"
+                  ? "bg-emerald-600 text-white"
+                  : "bg-surface-2 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Truck className="size-3" />
+              <span>Road ({shipments.filter((s) => s.transportMode === "ROAD").length})</span>
+            </button>
+            <button
+              onClick={() => setFilter("RAIL")}
+              className={`rounded-xl px-3 py-2 font-semibold transition flex items-center gap-1 ${
+                filter === "RAIL"
+                  ? "bg-blue-600 text-white"
+                  : "bg-surface-2 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Train className="size-3" />
+              <span>Rail ({shipments.filter((s) => s.transportMode === "RAIL").length})</span>
+            </button>
+            <button
+              onClick={() => setFilter("MULTIMODAL")}
+              className={`rounded-xl px-3 py-2 font-semibold transition ${
+                filter === "MULTIMODAL"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-surface-2 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Multimodal
+            </button>
+            <button
               onClick={() => setFilter("IN_TRANSIT")}
               className={`rounded-xl px-3 py-2 font-semibold transition ${
                 filter === "IN_TRANSIT"
@@ -143,26 +176,6 @@ export function MyShipmentsView({
               }`}
             >
               In Transit
-            </button>
-            <button
-              onClick={() => setFilter("DELIVERED")}
-              className={`rounded-xl px-3 py-2 font-semibold transition ${
-                filter === "DELIVERED"
-                  ? "bg-blue-600 text-white"
-                  : "bg-surface-2 text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Delivered
-            </button>
-            <button
-              onClick={() => setFilter("DELAYED")}
-              className={`rounded-xl px-3 py-2 font-semibold transition ${
-                filter === "DELAYED"
-                  ? "bg-blue-600 text-white"
-                  : "bg-surface-2 text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Delayed
             </button>
           </div>
         </div>
@@ -181,6 +194,8 @@ export function MyShipmentsView({
         ) : (
           filteredShipments.map((s) => {
             const isSelected = s.id === activeShipmentId;
+            const isRoad = s.transportMode === "ROAD";
+            const isMultimodal = s.transportMode === "MULTIMODAL";
 
             return (
               <div
@@ -191,12 +206,24 @@ export function MyShipmentsView({
                     : "border-border bg-surface hover:border-border/90"
                 }`}
               >
-                {/* Left: Cargo ID, Name, Train, Type */}
+                {/* Left: Cargo ID, Mode Badge, Carrier Details */}
                 <div className="space-y-2 flex-1">
                   <div className="flex flex-wrap items-center gap-2.5">
                     <span className="text-base font-black text-foreground font-mono">{s.id}</span>
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-[10px] font-bold border ${
+                        isRoad
+                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                          : isMultimodal
+                            ? "bg-indigo-500/10 text-indigo-600 border-indigo-500/20"
+                            : "bg-blue-500/10 text-blue-600 border-blue-500/20"
+                      }`}
+                    >
+                      {isRoad ? <Truck className="size-3" /> : <Train className="size-3" />}
+                      <span>{s.transportMode || "RAIL"} FREIGHT</span>
+                    </span>
                     <span className="rounded-md bg-surface-2 px-2 py-0.5 font-mono text-[10px] text-muted-foreground border border-border">
-                      RR: {s.consignmentNumber}
+                      {isRoad ? "LR" : "RR"}: {s.consignmentNumber}
                     </span>
                     {getStatusBadge(s.status, s.statusLabel)}
                     {isSelected && (
@@ -209,16 +236,33 @@ export function MyShipmentsView({
                   <div className="text-xs font-bold text-foreground">{s.title}</div>
 
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Train className="size-3 text-blue-600" />
-                      <span>
-                        {s.train.trainName} ({s.train.trainNumber})
-                      </span>
-                    </span>
-                    <span>·</span>
-                    <span>
-                      Wagon: <strong className="text-foreground">{s.train.wagonNumber}</strong>
-                    </span>
+                    {isRoad && s.road ? (
+                      <>
+                        <span className="flex items-center gap-1 font-bold text-emerald-600">
+                          <Truck className="size-3" />
+                          <span>
+                            {s.road.transporterName} ({s.road.vehicleNumber})
+                          </span>
+                        </span>
+                        <span>·</span>
+                        <span>
+                          Trailer: <strong className="text-foreground">{s.road.trailerType}</strong>
+                        </span>
+                      </>
+                    ) : s.train ? (
+                      <>
+                        <span className="flex items-center gap-1 font-bold text-blue-600">
+                          <Train className="size-3" />
+                          <span>
+                            {s.train.trainName} ({s.train.trainNumber})
+                          </span>
+                        </span>
+                        <span>·</span>
+                        <span>
+                          Wagon: <strong className="text-foreground">{s.train.wagonNumber}</strong>
+                        </span>
+                      </>
+                    ) : null}
                     <span>·</span>
                     <span>
                       Weight: <strong className="text-foreground">{s.weightTons} Tons</strong>
@@ -226,12 +270,12 @@ export function MyShipmentsView({
                   </div>
                 </div>
 
-                {/* Middle: Route & Current Station */}
+                {/* Middle: Route & Current Station/Hub */}
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:px-6 border-y lg:border-y-0 lg:border-x border-border/70 py-3 lg:py-0">
                   {/* Origin to Destination */}
                   <div className="space-y-1 min-w-[170px]">
                     <div className="text-[10px] uppercase font-bold text-muted-foreground">
-                      Route
+                      {isRoad ? "Road Highway Corridor" : "Railway Freight Route"}
                     </div>
                     <div className="flex items-center gap-2 text-xs font-bold text-foreground">
                       <span>{s.origin.city}</span>
@@ -248,7 +292,7 @@ export function MyShipmentsView({
                   {/* Current Location */}
                   <div className="space-y-1 min-w-[170px]">
                     <div className="text-[10px] uppercase font-bold text-muted-foreground">
-                      Current Location
+                      {isRoad ? "Current Toll / Checkpost" : "Current Station / Yard"}
                     </div>
                     <div className="text-xs font-bold text-foreground flex items-center gap-1">
                       <MapPin className="size-3 text-red-500 shrink-0" />

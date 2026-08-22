@@ -1,5 +1,6 @@
 export type QaWorkflowType =
   | "PRE_DISPATCH_RAIL"
+  | "ROAD_TRUCK_FITNESS"
   | "CONTAINER_LOADING"
   | "COLD_CHAIN_IOT"
   | "MID_TRANSIT_CHECKPOINT"
@@ -7,6 +8,9 @@ export type QaWorkflowType =
 
 export type InspectionStatus =
   "DRAFT" | "IN_PROGRESS" | "PASSED" | "CONDITIONALLY_PASSED" | "FAILED" | "REJECTED";
+
+export type TransportInspectionMode =
+  "RAIL_FREIGHT" | "ROAD_COMMERCIAL_TRUCK" | "MULTIMODAL_INTERMODAL";
 
 export type QaStepId =
   | "manifest"
@@ -18,10 +22,11 @@ export type QaStepId =
 
 export interface ChecklistItem {
   id: string;
-  category: "MANIFEST" | "STRUCTURAL" | "SEAL" | "ENVIRONMENTAL" | "BRAKE" | "SAFETY";
+  category:
+    "MANIFEST" | "STRUCTURAL" | "SEAL" | "ENVIRONMENTAL" | "BRAKE" | "SAFETY" | "HIGHWAY_FITNESS";
   label: string;
   description: string;
-  standardReference?: string; // e.g. "RDSO G-95", "ISO 1496-1", "IMDG Code 3.2"
+  standardReference?: string; // e.g. "RDSO G-95", "CMVR Rule 138", "ISO 1496-1", "IMDG Code 3.2"
   required: boolean;
   passed: boolean;
   value?: string | number;
@@ -52,6 +57,25 @@ export interface SensorCalibrationData {
   tamperSensorArmed: boolean;
 }
 
+export interface RoadTruckFitnessMetrics {
+  truckRegistrationNumber: string;
+  vehicleMakeModel: string;
+  grossVehicleWeightTons: number;
+  fastagTagId: string;
+  fastagStatusVerified: boolean;
+  eWayBillNumber: string;
+  eWayBillValidUntil: string;
+  cmvrFitnessCertNumber: string;
+  tyreTreadDepthMm: number; // Min required >= 3.0 mm
+  tyrePressureAllAxlesPsi: number; // Target ~120 PSI
+  fifthWheelKingpinLocked: boolean;
+  airBrakeDualPressurePsi: number; // Target ~125 PSI
+  emergencyBrakeActuatorPassed: boolean;
+  retroReflectiveTapeInstalled: boolean;
+  driverBreathalyzerPassed: boolean;
+  driverSarathiDlVerified: boolean;
+}
+
 export interface BpcMetrics {
   locomotiveNumber: string;
   locoClass: string;
@@ -69,7 +93,14 @@ export interface BpcMetrics {
 
 export interface EvidencePhoto {
   id: string;
-  category: "SEAL_BARCODE" | "WAGON_BODY" | "LASHING_CHAINS" | "HAZMAT_LABEL" | "DEFECT_RECTIFIED";
+  category:
+    | "SEAL_BARCODE"
+    | "WAGON_BODY"
+    | "LASHING_CHAINS"
+    | "HAZMAT_LABEL"
+    | "DEFECT_RECTIFIED"
+    | "TRUCK_TYRE"
+    | "FASTAG_EWAY";
   title: string;
   timestamp: string;
   locationName: string;
@@ -81,7 +112,7 @@ export interface EvidencePhoto {
 export interface DefectItem {
   id: string;
   title: string;
-  category: "STRUCTURAL" | "SEAL" | "MECHANICAL" | "SENSOR" | "DOCUMENTATION";
+  category: "STRUCTURAL" | "SEAL" | "MECHANICAL" | "SENSOR" | "DOCUMENTATION" | "HIGHWAY_SAFETY";
   severity: "MINOR" | "MAJOR" | "CRITICAL";
   rectificationStatus: "OPEN" | "RECTIFIED_ON_SITE" | "WAIVED_WITH_RESTRICTIONS";
   reportedTimestamp: string;
@@ -121,6 +152,8 @@ export interface InspectionRecord {
   shipmentId: string;
   consignmentNumber: string;
   wagonNumber: string;
+  truckNumber?: string;
+  transportMode?: TransportInspectionMode;
   trainNumber?: string;
   trainName?: string;
   corridor: string;
@@ -139,6 +172,7 @@ export interface InspectionRecord {
   checklist: ChecklistItem[];
   sensorData: SensorCalibrationData;
   bpcMetrics: BpcMetrics;
+  roadFitnessMetrics?: RoadTruckFitnessMetrics;
   evidencePhotos: EvidencePhoto[];
   defects: DefectItem[];
   inspectorSignoff?: InspectorSignoff;
