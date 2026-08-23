@@ -1334,7 +1334,9 @@ function Dashboard() {
                   data: {
                     customer: user?.company || "Tata Motors Logistics Division",
                     origin: bookOrigin,
+                    originCoords: { lat: 28.6139, lng: 77.209 },
                     destination: bookDest,
+                    destCoords: { lat: 18.9387, lng: 72.8353 },
                     cargoType: bookCargo,
                     cargoWeight: bookTeu * 21.5,
                     containerCount: bookTeu,

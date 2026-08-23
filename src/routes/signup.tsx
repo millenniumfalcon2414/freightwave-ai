@@ -185,7 +185,7 @@ const GST_STATE_MAP: Record<string, string> = {
   "37": "Andhra Pradesh",
 };
 
-export function SignUpPage() {
+function SignUpPage() {
   const navigate = useNavigate();
   const formId = useId();
 

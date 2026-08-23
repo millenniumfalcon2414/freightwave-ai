@@ -42,7 +42,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-export function LoginPage() {
+function LoginPage() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("rajesh.sengupta@tata-steel.in");

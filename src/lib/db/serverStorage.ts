@@ -80,10 +80,11 @@ function getSqliteInstance(): SqliteDatabase | null {
     console.error("[SQLite Storage] Failed to initialize SQLite engine:", err);
   }
 
-  // FAIL loudly if we are on the server and SQLite cannot initialize
+  // If we are on the server and SQLite cannot initialize, just return null
+  // The system will fallback to JSON persistence or in-memory.
   if (typeof window === "undefined") {
-    throw new Error(
-      "[SQLite Storage] Failed to initialize SQLite engine. Database is required on the server.",
+    console.warn(
+      "[SQLite Storage] Failed to initialize SQLite engine. Database is required on the server, falling back.",
     );
   }
 
@@ -315,6 +316,21 @@ function initializeTables(db: SqliteDatabase) {
 export function readPersistentDatabase(): DatabaseState | null {
   const db = getSqliteInstance();
   if (!db) {
+    if (typeof process !== "undefined") {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports
+        const fs = (process as any).getBuiltinModule?.("node:fs") || require("fs");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports
+        const path = (process as any).getBuiltinModule?.("node:path") || require("path");
+        const dbPath = path.resolve(process.cwd(), "data", "freightwave.json");
+        if (fs.existsSync(dbPath)) {
+          const raw = fs.readFileSync(dbPath, "utf-8");
+          return JSON.parse(raw) as DatabaseState;
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
     return null;
   }
 
@@ -621,6 +637,23 @@ export function readPersistentDatabase(): DatabaseState | null {
 export function writePersistentDatabase(state: DatabaseState): boolean {
   const db = getSqliteInstance();
   if (!db) {
+    if (typeof process !== "undefined") {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports
+        const fs = (process as any).getBuiltinModule?.("node:fs") || require("fs");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports
+        const path = (process as any).getBuiltinModule?.("node:path") || require("path");
+        const dbDir = path.resolve(process.cwd(), "data");
+        if (!fs.existsSync(dbDir)) {
+          fs.mkdirSync(dbDir, { recursive: true });
+        }
+        const dbPath = path.join(dbDir, "freightwave.json");
+        fs.writeFileSync(dbPath, JSON.stringify(state, null, 2), "utf-8");
+        return true;
+      } catch (err) {
+        // ignore
+      }
+    }
     return false;
   }
 

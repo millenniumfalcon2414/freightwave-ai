@@ -52,7 +52,7 @@ export function EmergencyFloatingBanner({ onOpenConsole }: Props) {
               </div>
               <p className="text-[11px] text-red-200">
                 108 ALS Ambulance{" "}
-                <span className="font-semibold text-white">
+                <span className="font-semibold text-white" suppressHydrationWarning>
                   ETA {Math.ceil(activeIncident.ambulance.etaMinutes)} mins
                 </span>{" "}
                 ({activeIncident.ambulance.distanceKm} km away) · Trauma Bay 1 Reserved at{" "}
